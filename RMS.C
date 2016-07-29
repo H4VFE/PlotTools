@@ -26,11 +26,12 @@ for(int i = 0; i < n; i++){
       y[k] = vals[1024*j+k];
     }
     
-    if(max - min < 100){
+    //if(max - min < 100){
       gr = new TGraph(1024, x, y);
       rms = gr->GetRMS(2);
-      h.Fill(rms);
-    }
+      //if(rms < 4) cout << i << " " << j<< endl;
+      /*else*/ h.Fill(rms);
+    //}
     max = 0;
   }
 }
