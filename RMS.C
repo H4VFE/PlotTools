@@ -2,19 +2,26 @@
 #include <math.h>
 
 TTree *H4tree = (TTree*) _file0->Get("H4tree");
-int n = H4tree->GetEntries();
+int events = H4tree->GetEntries();
+int values = htemp->GetEntries();
+int channels = H4tree->GetMaximum("digiChannel");
+int groups = H4tree->GetMaximum("digiGroup");
+
 float rms, max = 0, min;
 
-float vals[36864]; //1024*groups*channels
-float x[1024], y[1024];
+float vals[values/events];
+float chs[values/events];
+float grs[values/events];
 
 H4tree->SetBranchAddress("digiSampleValue", vals);
+H4tree->SetBranchAddress("digiChannel", chs);
+H4tree->SetBranchAddress("digiGroup", grs);
 
 //float rms[n]; Future use
 
 TH1F h("h", "RMS Distribution", sqrt(26712), 0, 20);
 
-for(int i = 0; i < n; i++){
+for(int i = 0; i < events; i++){
   H4tree->GetEntry(i);
   
   for(int j = 0; j < 36; j++){
