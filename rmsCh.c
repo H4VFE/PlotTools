@@ -13,7 +13,7 @@ void rmsCh(Int_t ch){
   Float_t x[1024], y[1024];
   
   H4tree->SetBranchAddress("digiSampleValue", vals);
-  H4tree->SetBranchAddress("digiGroup", chs);
+  H4tree->SetBranchAddress("digiChannel", chs);
   
   TString title;
   title.Form("RMS Distribution for Channel %i", ch);
@@ -41,6 +41,7 @@ void rmsCh(Int_t ch){
       }
       max = 0;
     }
+    cout<<i<<endl;
   }
 
   float r = h.GetRMS();
