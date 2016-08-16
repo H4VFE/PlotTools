@@ -1,12 +1,13 @@
 #include <math.h>
 
+TCanvas *c = new TCanvas("c", "c", 600, 600);
+
 void RMS(Int_t grp = -1, Int_t ch = -1){
   TTree *H4tree = (TTree*) _file0->Get("H4tree");
   
   Int_t events = H4tree->GetEntries();
   Int_t channels = H4tree->GetMaximum("digiChannel");
   Int_t groups = H4tree->GetMaximum("digiGroup");
-  Int_t values = events*channels*groups*1024;
   
   Float_t vals[36864];
   UInt_t grps[36864];
@@ -20,45 +21,48 @@ void RMS(Int_t grp = -1, Int_t ch = -1){
   //TString title;
   //title.Form("RMS Distribution for Channel %i", ch);
   
-  TH1F h("h", ""/*title.Data()*/, sqrt(values/1024), 0, 20);
+  TH1F *h = new TH1F("h", "RMS Distribution", sqrt(26712), 0, 20);
   
-  Float_t rms, max = 0, min;
+  Float_t rms, max, min;
   
-  for(int i = 0; i < events; i++){
-    H4tree->GetEntry(i);
-    for(int j = 0; j < 36; j++){
-      NEXT:if(grps[j*1024] != grp && grp != -1) continue;
+  for(int iEnt = 0; iEnt < events; iEnt++){
+    H4tree->GetEntry(iEnt);
+    for(int jGrp = 0; jGrp < 36; jGrp++){
+      if(grps[jGrp*1024] != grp && grp != -1) continue;
       min = vals[0];
-      for(int k = 0; k < 1024; k++){
-	if(chs[1024*j+k] != ch && ch != -1){
-	  j++;
-	  goto NEXT;
-	}
-	if(vals[1024*j+k] > max) max = vals[1024*j+k];
-	x[k] = k;
-	y[k] = vals[1024*j+k];
+      max = min;
+      for(int kVal = 0; kVal < 1024; kVal++){
+	if(chs[1024*jGrp+kVal] != ch && ch != -1) break;
+	if(vals[1024*jGrp+kVal] > max) max = vals[1024*jGrp+kVal];
+	else if(vals[1024*jGrp+kVal] < min) min = vals[1024*jGrp+kVal];
+	x[kVal] = kVal;
+	y[kVal] = vals[1024*jGrp+kVal];
       }
     
+//        std::cout << " rms = " << rms << std::endl;
+
       if(max - min < 100){
-	gr = new TGraph(1024, x, y);
+	TGraph* gr = new TGraph(1024, x, y);
 	rms = gr->GetRMS(2);
-	h.Fill(rms);
+	
+// 	std::cout << " rms = " << rms << std::endl;
+	
+	h->Fill(rms);
       }
-      max = 0;
     }
-    cout<<i<<endl;
   }
 
-  float r = h.GetRMS();
-  float mean = h.GetMean();
+  float r = h->GetRMS();
+  float mean = h->GetMean();
   min = mean - 3*r;
   max = mean + 3*r;
   
-  h.SetAxisRange(min, max, "X");
+ 
+    
+  h->DrawClone();
   
-  TCanvas *canvas = new TCanvas("c", "c", 600, 600);
-  
-  h.Draw();
-  
-  c->SaveAs("./test.root");
+  TString filename;
+  filename.Form("rms_%d_%d.root", grp, ch);
+
+  h->SaveAs(filename.Data());
 }
