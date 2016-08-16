@@ -1,6 +1,6 @@
 #include <math.h>
 
-void rms(Int_t grp = -1, Int_t ch = -1){
+void RMS(Int_t grp = -1, Int_t ch = -1){
   TTree *H4tree = (TTree*) _file0->Get("H4tree");
   
   Int_t events = H4tree->GetEntries();
@@ -17,20 +17,23 @@ void rms(Int_t grp = -1, Int_t ch = -1){
   H4tree->SetBranchAddress("digiGroup", grps);
   H4tree->SetBranchAddress("digiChannel", chs);
   
-  TString title;
-  title.Form("RMS Distribution for Channel %i", ch);
+  //TString title;
+  //title.Form("RMS Distribution for Channel %i", ch);
   
-  TH1F h("h", title.Data(), sqrt(values/1024), 0, 20);
+  TH1F h("h", ""/*title.Data()*/, sqrt(values/1024), 0, 20);
   
   Float_t rms, max = 0, min;
   
   for(int i = 0; i < events; i++){
     H4tree->GetEntry(i);
-    /*NEXT:*/ for(int j = 0; j < 36; j++){
-      if(grps[j*1024] != grp && grp != -1) continue;
+    for(int j = 0; j < 36; j++){
+      NEXT:if(grps[j*1024] != grp && grp != -1) continue;
       min = vals[0];
       for(int k = 0; k < 1024; k++){
-	if(chs[1024*j+k] != ch && ch != -1) continue /*goto NEXT*/; //goto breaks the code, for some reason
+	if(chs[1024*j+k] != ch && ch != -1){
+	  j++;
+	  goto NEXT;
+	}
 	if(vals[1024*j+k] > max) max = vals[1024*j+k];
 	x[k] = k;
 	y[k] = vals[1024*j+k];
@@ -52,7 +55,10 @@ void rms(Int_t grp = -1, Int_t ch = -1){
   max = mean + 3*r;
   
   h.SetAxisRange(min, max, "X");
-
+  
+  TCanvas *canvas = new TCanvas("c", "c", 600, 600);
+  
   h.Draw();
-  c1->SaveAs("./test.png");
+  
+  c->SaveAs("./test.root");
 }
