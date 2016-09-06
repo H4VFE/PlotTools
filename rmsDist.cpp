@@ -9,13 +9,13 @@
 int start = 350, end = 900;
 int count = 0;
 
-Float_t vals[36864];
-UInt_t grps[36864];
-UInt_t chs[36864];
-Float_t x[550], y[550];
+float vals[36864];
+uint grps[36864];
+uint chs[36864];
+float x[550], y[550];
 
-void RMS(Int_t grp = -1, Int_t ch = -1, Int_t events = 0, TTree* H4tree = 0);
-TString channelMap(Int_t grp, Int_t ch, TTree* H4tree);
+void RMS(int grp = -1, int ch = -1, int events = 0, TTree* H4tree = 0, TH1F* h = 0);
+TString channelMap(int grp, int ch, TTree* H4tree);
 
 int main(int argc, char *argv[]){
   char* runNum = argv[1];
@@ -26,24 +26,30 @@ int main(int argc, char *argv[]){
   TFile *file = TFile::Open(t.Data());
   TTree *H4tree = (TTree*) file->Get("H4tree");
 
-  Int_t events = H4tree->GetEntries();
-  Int_t channels = H4tree->GetMaximum("digiChannel");
-  Int_t groups = H4tree->GetMaximum("digiGroup");
+  int events = H4tree->GetEntries();
+  int channels = H4tree->GetMaximum("digiChannel");
+  int groups = H4tree->GetMaximum("digiGroup");
   
   H4tree->SetBranchAddress("digiSampleValue", vals);
   H4tree->SetBranchAddress("digiGroup", grps);
   H4tree->SetBranchAddress("digiChannel", chs);
   
+  TH1F *h = new TH1F("h", "", sqrt(26712), 0, 20);
+  
   for(int grp = 0; grp <= groups ; grp++){
     for(int ch = 0; ch <= channels; ch++){
-      RMS(grp, ch, events, H4tree);
+      RMS(grp, ch, events, H4tree, h);
     }
   }
   
   return 1;
 }
 
-void RMS(Int_t grp, Int_t ch, Int_t events, TTree* H4tree){
+void RMS(int grp, int ch, int events, TTree* H4tree, TH1F* h){
+  h->Reset();
+  
+  h->SetAxisRange(0, 20, "X");
+  
   TString title;
   title.Form("RMS Distribution for Group %d, Channel %d, ", grp, ch);
   
@@ -51,11 +57,11 @@ void RMS(Int_t grp, Int_t ch, Int_t events, TTree* H4tree){
   
   title = title + channelLabel;
   
-  TH1F *h = new TH1F("h", title.Data(), sqrt(26712), 0, 20);
+  h->SetTitle(title.Data());
   
   TMultiGraph *mg = new TMultiGraph("mg", "Events used in RMS Distribution");
   
-  Float_t rms, max, min;
+  float rms, max, min;
   
   for(int iEnt = 0; iEnt < events; iEnt++){
     H4tree->GetEntry(iEnt);
@@ -63,7 +69,7 @@ void RMS(Int_t grp, Int_t ch, Int_t events, TTree* H4tree){
       if(grps[jGrp*1024] != grp && grp != -1) continue;
       min = vals[0];
       max = 0;
-      for(int kVal = start; kVal < end; kVal++){ //kVal can be changed to look at a section points, to easily exlude pulses
+      for(int kVal = start; kVal < end; kVal++){ //kVal can be changed to look at a section, to easily exlude pulses
 	if(chs[1024*jGrp+kVal] != ch && ch != -1) break;
 	if(vals[1024*jGrp+kVal] > max) max = vals[1024*jGrp+kVal];
 	else if(vals[1024*jGrp+kVal] < min) min = vals[1024*jGrp+kVal];
@@ -71,17 +77,16 @@ void RMS(Int_t grp, Int_t ch, Int_t events, TTree* H4tree){
 	y[kVal-start] = vals[1024*jGrp+kVal];
       }
     
-      if(max - min < 100 && max - min > 0){
-	count++;
+      if(max - min < 50 && max - min > 0){
 	TGraph *gr = new TGraph(end - start, x, y);
-	if(count%10 == 0){
-	  mg->Add(gr);
-	  //std::cout << max << " " << min << std::endl;
-	}
+	if(count%10 == 0) mg->Add(gr);
+	count++;
 	rms = gr->GetRMS(2);
 	h->Fill(rms);
       }
     }
+    
+    if(iEnt == events -1) std::cout<<grp<<" "<<ch<<std::endl;
   }
 
   float r = h->GetRMS();
@@ -91,7 +96,7 @@ void RMS(Int_t grp, Int_t ch, Int_t events, TTree* H4tree){
   
   h->SetAxisRange(min, max, "X");
   
-  Int_t run = (Int_t) H4tree->GetMaximum("runNumber");
+  int run = (int) H4tree->GetMaximum("runNumber");
   
   TString filename;
   filename.Form("./%d/1/rms_%d_%d.root", run, grp, ch);
@@ -106,15 +111,15 @@ void RMS(Int_t grp, Int_t ch, Int_t events, TTree* H4tree){
   
   TString cut;
   cut.Form("digiGroup == %d && digiChannel == %d", grp, ch);
-  H4tree->Draw("digiSampleValue:digiSampleIndex >> pulse", cut.Data());
+  H4tree->Draw("digiSampleValue:digiSampleIndex >> pulse", cut.Data(), "goff");
   
   mg->Write();
   pulse->Write();
 }
 
-TString channelMap(Int_t grp, Int_t ch, TTree* H4tree){
-  Int_t channel = 8*grp + ch;
-  Float_t run = H4tree->GetMaximum("runNumber");
+TString channelMap(int grp, int ch, TTree* H4tree){
+  int channel = 8*grp + ch;
+  float run = H4tree->GetMaximum("runNumber");
   
   if(run < 5400){
     switch(channel){
