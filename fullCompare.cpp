@@ -5,7 +5,7 @@
 #include "TLegend.h"
 #include "TMultiGraph.h"
 
-void compare(Int_t grp, Int_t ch, char* run1, char* run2);
+void compare(int grp, int ch, char* run1, char* run2);
 
 int main(int argc, char *argv[]){
   for(int grp = 0; grp < 4; grp++){
@@ -16,7 +16,7 @@ int main(int argc, char *argv[]){
   return 1;
 }
 
-void compare(Int_t grp, Int_t ch, char* run1, char* run2){
+void compare(int grp, int ch, char* run1, char* run2){
   TString filename1;
   filename1.Form("./%s/1/rms_%d_%d.root", run1, grp, ch);
   
