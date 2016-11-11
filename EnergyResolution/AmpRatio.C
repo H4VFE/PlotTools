@@ -1,87 +1,355 @@
 {
+  TFile *g_file = new TFile("dummy.root", "RECREATE");
+  
   TChain *chain  = new TChain("h4");
   
-  chain->Add("ntuples_v1/analysis_5651.root");
-  chain->Add("ntuples_v1/analysis_5654.root");
-  chain->Add("ntuples_v1/analysis_5655.root");
-  chain->Add("ntuples_v1/analysis_5659.root");
-  chain->Add("ntuples_v1/analysis_5661.root");
+  vector<int> runs;
+  runs.push_back(5270); runs.push_back(5305); runs.push_back(5307); runs.push_back(5308); runs.push_back(5309); runs.push_back(5651); runs.push_back(5654); runs.push_back(5655);  runs.push_back(5659); runs.push_back(5661);
   
-  TH2F *x = new TH2F("x", "x", 100, -8, 8, 100, .5, 2);
-  TH2F *y = new TH2F("y", "y", 100, -8, 8, 100, .5, 2);
+  TH1F *temphist1D = new TH1F("temphist1D", "temphist1D", 10000, -3000, 3000);
+  TH2F *temphist2D = new TH2F("temphist2D", "temphist2D", 60, -15, 15, 1000, 0.5, 1.5);
+  temphist2D->GetXaxis()->SetTitle("Position (mm)");
+  temphist2D->GetYaxis()->SetTitle("Amplitude Ratio");
+  TH2F *XCenterHist = new TH2F("XCenterHist", "XCenterHist", 60, -15, 15, 1000, 0.5, 1.5);
+  TH2F *YCenterHist = new TH2F("YCenterHist", "YCenterHist", 60, -15, 15, 1000, 0.5, 1.5);
+  TH2F *xhist = new TH2F("x", "x", 60, -15, 15, 1000, 0.5, 1.5);
+  TH2F *yhist = new TH2F("y", "y", 60, -15, 15, 1000, 0.5, 1.5);
   
-  TCanvas *c1 = new TCanvas("c1", "c1", 600, 600);
-  TCanvas *c2 = new TCanvas("c2", "c2", 600, 600);
+  XCenterHist->SetTitle("X Scan - All Center");
+  XCenterHist->GetXaxis()->SetTitle("Position (mm)");
+  XCenterHist->GetYaxis()->SetTitle("Amplitude Ratio");
   
-  c1->Divide(1,2);
-  c2->Divide(1,2);
+  YCenterHist->SetTitle("Y Scan - All Center");
+  YCenterHist->GetXaxis()->SetTitle("Position (mm)");
+  YCenterHist->GetYaxis()->SetTitle("Amplitude Ratio");
+  
+  xhist->SetTitle("X Scan - All");
+  xhist->GetXaxis()->SetTitle("Position (mm)");
+  xhist->GetYaxis()->SetTitle("Amplitude Ratio");
+  
+  yhist->SetTitle("Y Scan - All");
+  yhist->GetXaxis()->SetTitle("Position (mm)");
+  yhist->GetYaxis()->SetTitle("Amplitude Ratio");
+  
+  TCanvas *XcenterC = new TCanvas("XcenterC", "XcenterC", 1000, 1000);
+  TCanvas *XsideC = new TCanvas("XsideC", "XsideC", 1000, 1000);
+  TCanvas *XallC = new TCanvas("XallC", "XallC", 1000, 1000);
+  
+  XcenterC->Divide(2,4);
+  XsideC->Divide(3,3);
+  XallC->Divide(1,2);
+  
+  TCanvas *YcenterC = new TCanvas("YcenterC", "YcenterC", 1000, 1000);
+  TCanvas *YsideC = new TCanvas("YsideC", "YsideC", 1000, 1000);
+  TCanvas *YallC = new TCanvas("YallC", "YallC", 1000, 1000);
+  
+  YcenterC->Divide(2,4);
+  YsideC->Divide(3,3);
+  YallC->Divide(1,2);
+  
+  TCanvas *CenterProfiles = new TCanvas("CenterProfiles", "CenterProfiles", 1000, 1000);
+  CenterProfiles->Divide(1,2);
+  
+  TTree* h4;
+  TFile *f;
+  TString filename, plot, cut, histname;
+  float cutoff1, cutoff2;
+  
+  XcenterC->cd(6);
+  XCenterHist->Draw("AXIS");
+  YcenterC->cd(6);
+  YCenterHist->Draw("AXIS");
 
-  TF1 *p1 = new TF1("p1", "[0]*(x-[1])*(x-[2]) + [3]", -4, 8);
-  TF1 *p2 = new TF1("p2", "[0]*(x-[1])*(x-[2]) + [3]", -4, 8);
-  TF1 *p3 = new TF1("p3", "[0]*(x-[1])*(x-[2]) + [3]", -4, 8);
-  TF1 *p4 = new TF1("p4", "[0]*(x-[1])*(x-[2]) + [3]", -4, 8);
-  
-  p1->SetParameters(-.01, 0, 0, 1);
-  p2->SetParameters(-.01, 0, 0, 1);
-  p3->SetParameters(-.01, 0, 0, 1);
-  p4->SetParameters(-.01, 0, 0, 1);
-  
-  //////////////////////////////////////////// Drawing X with fit_ampl ////////////////////////////////////////////
-  
-  c1->cd(1);
-  
-  chain->Draw("(fit_ampl[XTAL_C0_APD2]/fit_ampl[XTAL_C0_APD1]):(X[0]/2) >> x", "X[0] > -200 && X[1] > -200 && abs(Y[0]) < 5 && abs(Y[1]) < 5 && (fit_ampl[XTAL_C0_APD2]/fit_ampl[XTAL_C0_APD1]) < 2"
-		"&& (fit_ampl[XTAL_C0_APD2]/fit_ampl[XTAL_C0_APD1]) > 0.5", "colz");
+  XsideC->cd(5);
+  XCenterHist->Draw("AXIS");
+  YsideC->cd(5);
+  YCenterHist->Draw("AXIS");
 
-  chain->Draw("(fit_ampl[XTAL_C0_APD2]/fit_ampl[XTAL_C0_APD1]):(X[0]/2)", "X[0] > -200 && X[1] > -200 && abs(Y[0]) < 5 && abs(Y[1]) < 5 && (fit_ampl[XTAL_C0_APD2]/fit_ampl[XTAL_C0_APD1]) < 2"
-		"&& (fit_ampl[XTAL_C0_APD2]/fit_ampl[XTAL_C0_APD1]) > 0.5", "prof same");
-
-  chain->Fit("p1", "(fit_ampl[XTAL_C0_APD2]/fit_ampl[XTAL_C0_APD1]):(X[0]/2)", "X[0] > -200 && X[1] > -200 && abs(Y[0]) < 5 && abs(Y[1]) < 5 && (fit_ampl[XTAL_C0_APD2]/fit_ampl[XTAL_C0_APD1]) < 2"
-		"&& (fit_ampl[XTAL_C0_APD2]/fit_ampl[XTAL_C0_APD1]) > 0.5", "prof same");
-
-  //////////////////////////////////////////// Drawing Y with fit_ampl ////////////////////////////////////////////
+  CenterProfiles->cd(1);
+  XCenterHist->Draw("AXIS");
+  CenterProfiles->cd(2);
+  YCenterHist->Draw("AXIS");
   
-  c1->cd(2);
+  for(auto i : runs){
+    filename.Form("./ntuples_v1/analysis_%d.root", i);
+    f = TFile::Open(filename.Data());
+    h4 = (TTree*) f->Get("h4");
+    
+    g_file->cd();
+    
+    h4->Draw("fit_ampl[XTAL_C0_APD1] >> temphist1D", "abs(X[0]) < 5 && abs(X[1]) < 5 && abs(Y[0]) < 5 && abs(Y[1]) < 5", "goff");
+    cutoff1 = temphist1D->GetMean() - 3*temphist1D->GetRMS();
+    if(cutoff1 < 0) cutoff1 = temphist1D->GetMean();
+    
+    temphist1D->Reset();
+    
+    h4->Draw("fit_ampl[XTAL_C0_APD2] >> temphist1D", "abs(X[0]) < 5 && abs(X[1]) < 5 && abs(Y[0]) < 5 && abs(Y[1]) < 5", "goff");
+    cutoff2 = temphist1D->GetMean() - 3*temphist1D->GetRMS();
+    
+    if(cutoff2 < 0) cutoff2 = temphist1D->GetMean();
+    
+    //cout << cutoff1 << " " << cutoff2 << endl;
+    
+    temphist1D->Reset();
+    
+    plot.Form("(fit_ampl[XTAL_C0_APD2]/fit_ampl[XTAL_C0_APD1]):((X[0]*(run > 5600 || run == 5270 || run == 5308 || run == 5305) + (X[0]-10)*(run == 5309) + (X[0]+10)*(run == 5307))/2) >> temphist2D");
+    cut.Form("X[0] > -200 && X[1] > -200 && abs(Y[0]) < 10 && abs(Y[1]) < 10 && fit_ampl[XTAL_C0_APD1] > %f && fit_ampl[XTAL_C0_APD2] > %f", cutoff1, cutoff2);
+    //cut.Form("X[0] > -200 && X[1] > -200 && abs(Y[0]) < 5 && abs(Y[1]) < 5");
+    
+    h4->Draw(plot.Data(), cut.Data(), "colz goff");
+    xhist->Add(temphist2D, 1);
+    if(i > 5600 || i == 5305) XCenterHist->Add(temphist2D, 1);
+    
+    switch (i){
+      case 5270:
+	XsideC->cd(2);
+	temphist2D->SetTitle("X Scan - North");
+	temphist2D->ProfileX("XNorthpfx");
+	temphist2D->DrawClone("colz");
+	XNorthpfx->SetLineColor(6);
+	XNorthpfx->DrawClone("same");
+	break;
+      case 5307:
+	XsideC->cd(6);
+	temphist2D->SetTitle("X Scan - East");
+	temphist2D->DrawClone("colz");
+	temphist2D->ProfileX("XEastpfx");
+	XEastpfx->SetLineColor(7);
+	XEastpfx->DrawClone("same");
+	break;
+      case 5308:
+	XsideC->cd(8);
+	temphist2D->SetTitle("X Scan - South");
+	temphist2D->DrawClone("colz");
+	temphist2D->ProfileX("XSouthpfx");
+	XSouthpfx->SetLineColor(8);
+	XSouthpfx->DrawClone("same");
+	break;
+      case 5309:
+	XsideC->cd(4);
+	temphist2D->SetTitle("X Scan - West");
+	temphist2D->DrawClone("colz");
+	temphist2D->ProfileX("XWestpfx");
+	XWestpfx->SetLineColor(9);
+	XWestpfx->DrawClone("same");
+	break;
+      case 5651:
+	XcenterC->cd(1);
+	temphist2D->SetTitle("X Scan - Center");
+	temphist2D->DrawClone("colz");
+	temphist2D->ProfileX("XCenter1pfx");
+	XCenter1pfx->SetLineColor(1);
+	XCenter1pfx->DrawClone("same");
+	CenterProfiles->cd(1);
+	XCenter1pfx->Draw("same");
+	break;
+      case 5654:
+	XcenterC->cd(2);
+	temphist2D->SetTitle("X Scan - Center");
+	temphist2D->DrawClone("colz");
+	temphist2D->ProfileX("XCenter2pfx");
+	XCenter2pfx->SetLineColor(2);
+	XCenter2pfx->DrawClone("same");
+	CenterProfiles->cd(1);
+	XCenter2pfx->Draw("same");
+	break;
+      case 5655:
+	XcenterC->cd(3);
+	temphist2D->SetTitle("X Scan - Center");
+	temphist2D->DrawClone("colz");
+	temphist2D->ProfileX("XCenter3pfx");
+	XCenter3pfx->SetLineColor(3);
+	XCenter3pfx->DrawClone("same");
+	CenterProfiles->cd(1);
+	XCenter3pfx->Draw("same");
+	break;
+      case 5659:
+	XcenterC->cd(4);
+	temphist2D->SetTitle("X Scan - Center");
+	temphist2D->DrawClone("colz");
+	temphist2D->ProfileX("XCenter4pfx");
+	XCenter4pfx->SetLineColor(4);
+	XCenter4pfx->DrawClone("same");
+	CenterProfiles->cd(1);
+	XCenter4pfx->Draw("same");
+	break;
+      case 5661:
+	XcenterC->cd(5);
+	temphist2D->SetTitle("X Scan - Center");
+	temphist2D->DrawClone("colz");
+	temphist2D->ProfileX("XCenter5pfx");
+	XCenter5pfx->SetLineColor(5);
+	XCenter5pfx->DrawClone("same");
+	CenterProfiles->cd(1);
+	XCenter5pfx->Draw("same");
+	break;
+      case 5305:
+	XcenterC->cd(6);
+	temphist2D->SetTitle("X Scan - Center");
+	temphist2D->DrawClone("colz");
+	temphist2D->ProfileX("XCenter6pfx");
+	XCenter6pfx->SetLineColor(6);
+	XCenter6pfx->DrawClone("same");
+	CenterProfiles->cd(1);
+	XCenter6pfx->Draw("same");
+	break;
+    }
+    
+    temphist2D->Reset();
+    
+    plot.Form("(fit_ampl[XTAL_C0_APD2]/fit_ampl[XTAL_C0_APD1]):((Y[0]*(run > 5600 || run == 5307 || run == 5309 || run == 5305) + (Y[0]-10)*(run == 5270) + (Y[0]+10)*(run == 5308))/2) >> temphist2D");
+    cut.Form("Y[0] > -200 && Y[1] > -200 && abs(X[0]) < 10 && X[1] < 12.5 && X[1] > -7.5 && fit_ampl[XTAL_C0_APD1] > %f && fit_ampl[XTAL_C0_APD2] > %f", cutoff1, cutoff2);
+    //cut.Form("Y[0] > -200 && Y[1] > -200 && abs(X[0]) < 5 && X[1] < 7.5 && X[1] > -2.5");
+    
+    h4->Draw(plot.Data(), cut.Data(), "colz goff");
+    yhist->Add(temphist2D, 1);
+    if(i > 5600 || i == 5305) YCenterHist->Add(temphist2D, 1);
+    
+    switch (i){
+      case 5270:
+	YsideC->cd(2);
+	temphist2D->SetTitle("Y Scan - North");
+	temphist2D->DrawClone("colz");
+	temphist2D->ProfileX("YNorthpfx");
+	YNorthpfx->SetLineColor(6);
+	YNorthpfx->DrawClone("same");
+	break;
+      case 5307:
+	YsideC->cd(6);
+	temphist2D->SetTitle("Y Scan - East");
+	temphist2D->DrawClone("colz");
+	temphist2D->ProfileX("YEastpfx");
+	YEastpfx->SetLineColor(7);
+	YEastpfx->DrawClone("same");
+	break;
+      case 5308:
+	YsideC->cd(8);
+	temphist2D->SetTitle("Y Scan - South");
+	temphist2D->DrawClone("colz");
+	temphist2D->ProfileX("YSouthpfx");
+	YSouthpfx->SetLineColor(8);
+	YSouthpfx->DrawClone("same");
+	break;
+      case 5309:
+	YsideC->cd(4);
+	temphist2D->SetTitle("Y Scan - West");
+	temphist2D->DrawClone("colz");
+	temphist2D->ProfileX("YWestpfx");
+	YWestpfx->SetLineColor(9);
+	YWestpfx->DrawClone("same");
+	break;
+      case 5651:
+	YcenterC->cd(1);
+	temphist2D->SetTitle("Y Scan - Center");
+	temphist2D->DrawClone("colz");
+	temphist2D->ProfileX("YCenter1pfx");
+	YCenter1pfx->SetLineColor(1);
+	YCenter1pfx->DrawClone("same");
+	CenterProfiles->cd(2);
+	YCenter1pfx->Draw("same");
+	break;
+      case 5654:
+	YcenterC->cd(2);
+	temphist2D->SetTitle("Y Scan - Center");
+	temphist2D->DrawClone("colz");
+	temphist2D->ProfileX("YCenter2pfx");
+	YCenter2pfx->SetLineColor(2);
+	YCenter2pfx->DrawClone("same");
+	CenterProfiles->cd(2);
+	YCenter2pfx->Draw("same");
+	break;
+      case 5655:
+	YcenterC->cd(3);
+	temphist2D->SetTitle("Y Scan - Center");
+	temphist2D->DrawClone("colz");
+	temphist2D->ProfileX("YCenter3pfx");
+	YCenter3pfx->SetLineColor(3);
+	YCenter3pfx->DrawClone("same");
+	CenterProfiles->cd(2);
+	YCenter3pfx->Draw("same");
+	break;
+      case 5659:
+	YcenterC->cd(4);
+	temphist2D->SetTitle("Y Scan - Center");
+	temphist2D->DrawClone("colz");
+	temphist2D->ProfileX("YCenter4pfx");
+	YCenter4pfx->SetLineColor(4);
+	YCenter4pfx->DrawClone("same");
+	CenterProfiles->cd(2);
+	YCenter4pfx->Draw("same");
+	break;
+      case 5661:
+	YcenterC->cd(5);
+	temphist2D->SetTitle("Y Scan - Center");
+	temphist2D->DrawClone("colz");
+	temphist2D->ProfileX("YCenter5pfx");
+	YCenter5pfx->SetLineColor(5);
+	YCenter5pfx->DrawClone("same");
+	CenterProfiles->cd(2);
+	YCenter5pfx->Draw("same");
+	break;
+      case 5305:
+	YcenterC->cd(6);
+	temphist2D->SetTitle("Y Scan - Center");
+	temphist2D->DrawClone("colz");
+	temphist2D->ProfileX("YCenter6pfx");
+	YCenter6pfx->SetLineColor(6);
+	YCenter6pfx->DrawClone("same");
+	CenterProfiles->cd(2);
+	YCenter6pfx->Draw("same");
+	break;
+    }
+    
+    temphist2D->Reset();
+  }
   
-  chain->Draw("(fit_ampl[XTAL_C0_APD2]/fit_ampl[XTAL_C0_APD1]):(Y[0]/2) >> y", "Y[0] > -200 && Y[1] > -200 && abs(X[0]) < 5 && abs(X[1]) < 5 && (fit_ampl[XTAL_C0_APD2]/fit_ampl[XTAL_C0_APD1]) < 2"
-		"&& (fit_ampl[XTAL_C0_APD2]/fit_ampl[XTAL_C0_APD1]) > 0.5", "colz");
-
-  chain->Draw("(fit_ampl[XTAL_C0_APD2]/fit_ampl[XTAL_C0_APD1]):(Y[0]/2)", "Y[0] > -200 && Y[1] > -200 && abs(X[0]) < 5 && abs(X[1]) < 5 && (fit_ampl[XTAL_C0_APD2]/fit_ampl[XTAL_C0_APD1]) < 2"
-		"&& (fit_ampl[XTAL_C0_APD2]/fit_ampl[XTAL_C0_APD1]) > 0.5", "prof same");
-
-  chain->Fit("p2", "(fit_ampl[XTAL_C0_APD2]/fit_ampl[XTAL_C0_APD1]):(Y[0]/2)", "Y[0] > -200 && Y[1] > -200 && abs(X[0]) < 5 && abs(X[1]) < 5 && (fit_ampl[XTAL_C0_APD2]/fit_ampl[XTAL_C0_APD1]) < 2"
-		"&& (fit_ampl[XTAL_C0_APD2]/fit_ampl[XTAL_C0_APD1]) > 0.5", "prof same");
-
-  //////////////////////////////////////////// Drawing X with amp_max ////////////////////////////////////////////
+  XcenterC->cd(7);
+  XCenterHist->Draw("colz");
+  XCenterHist->ProfileX("XCenterAllpfx");
+  XCenterAllpfx->DrawClone("same");
+  XsideC->cd(5);
+  XCenterHist->Draw("colz");
+  XCenterAllpfx->DrawClone("same");
   
-  c2->cd(1);
+  YcenterC->cd(7);
+  YCenterHist->Draw("colz");
+  YCenterHist->ProfileX("YCenterAllpfx");
+  YCenterAllpfx->DrawClone("same");
+  YsideC->cd(5);
+  YCenterHist->Draw("colz");
+  YCenterAllpfx->DrawClone("same");
   
-  chain->Draw("(amp_max[XTAL_C0_APD2]/amp_max[XTAL_C0_APD1]):(X[0]/2) >> x", "X[0] > -200 && X[1] > -200 && abs(Y[0]) < 5 && abs(Y[1]) < 5 && (amp_max[XTAL_C0_APD2]/amp_max[XTAL_C0_APD1]) < 2"
-		"&& (amp_max[XTAL_C0_APD2]/amp_max[XTAL_C0_APD1]) > 0.5", "colz");
+  XallC->cd(1);
+  xhist->Draw("colz");
+  xhist->ProfileX("xpfx");
+  xpfx->Draw("same");
+  XallC->cd(2);
+  xhist->Draw("AXIS");
+  xpfx->SetLineWidth(2);
+  xpfx->Draw("same");
+  XNorthpfx->DrawClone("same");
+  XEastpfx->DrawClone("same");
+  XSouthpfx->DrawClone("same");
+  XWestpfx->DrawClone("same");
+  XCenterAllpfx->DrawClone("same");
+  
+  YallC->cd(1);
+  yhist->Draw("colz");
+  yhist->ProfileX("ypfx");
+  ypfx->Draw("same");
+  YallC->cd(2);
+  yhist->Draw("AXIS");
+  ypfx->SetLineWidth(2);
+  ypfx->Draw("same");
+  YNorthpfx->DrawClone("same");
+  YEastpfx->DrawClone("same");
+  YSouthpfx->DrawClone("same");
+  YWestpfx->DrawClone("same");
+  YCenterAllpfx->DrawClone("same");
+  
 
-  chain->Draw("(amp_max[XTAL_C0_APD2]/amp_max[XTAL_C0_APD1]):(X[0]/2)", "X[0] > -200 && X[1] > -200 && abs(Y[0]) < 5 && abs(Y[1]) < 5 && (amp_max[XTAL_C0_APD2]/amp_max[XTAL_C0_APD1]) < 2"
-		"&& (amp_max[XTAL_C0_APD2]/amp_max[XTAL_C0_APD1]) > 0.5", "prof same");
-
-  chain->Fit("p3", "(amp_max[XTAL_C0_APD2]/amp_max[XTAL_C0_APD1]):(X[0]/2)", "X[0] > -200 && X[1] > -200 && abs(Y[0]) < 5 && abs(Y[1]) < 5 && (amp_max[XTAL_C0_APD2]/amp_max[XTAL_C0_APD1]) < 2"
-		"&& (amp_max[XTAL_C0_APD2]/amp_max[XTAL_C0_APD1]) > 0.5", "prof same");
+  TFile *file1 = new TFile("AmpRatio.root", "RECREATE");
   
-  //////////////////////////////////////////// Drawing Y with amp_max ////////////////////////////////////////////
-  
-  c2->cd(2);
-  
-  chain->Draw("(amp_max[XTAL_C0_APD2]/amp_max[XTAL_C0_APD1]):(Y[0]/2) >> y", "Y[0] > -200 && Y[1] > -200 && abs(X[0]) < 5 && abs(X[1]) < 5 && (amp_max[XTAL_C0_APD2]/amp_max[XTAL_C0_APD1]) < 2"
-		"&& (amp_max[XTAL_C0_APD2]/amp_max[XTAL_C0_APD1]) > 0.5", "colz");
-
-  chain->Draw("(amp_max[XTAL_C0_APD2]/amp_max[XTAL_C0_APD1]):(Y[0]/2)", "Y[0] > -200 && Y[1] > -200 && abs(X[0]) < 5 && abs(X[1]) < 5 && (amp_max[XTAL_C0_APD2]/amp_max[XTAL_C0_APD1]) < 2"
-		"&& (amp_max[XTAL_C0_APD2]/amp_max[XTAL_C0_APD1]) > 0.5", "prof same");
-
-  chain->Fit("p4", "(amp_max[XTAL_C0_APD2]/amp_max[XTAL_C0_APD1]):(Y[0]/2)", "Y[0] > -200 && Y[1] > -200 && abs(X[0]) < 5 && abs(X[1]) < 5 && (amp_max[XTAL_C0_APD2]/amp_max[XTAL_C0_APD1]) < 2"
-		"&& (amp_max[XTAL_C0_APD2]/amp_max[XTAL_C0_APD1]) > 0.5", "prof same");
-
-  //////////////////////////////////////////////// Saving Canvases ////////////////////////////////////////////////
-  
-  TFile *file1 = new TFile("AmpRatios.root", "RECREATE");
-  
-  c1->Write();
-  c2->Write();
+  //c1->Write();
+  //c2->Write();
 }
