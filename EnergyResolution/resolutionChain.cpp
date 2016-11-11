@@ -10,6 +10,7 @@
 #include "TLegend.h"
 #include "TMath.h"
 #include "TChain.h"
+#include <fstream>
 #include <vector>
 #include <string.h>
 #include <algorithm>
@@ -19,11 +20,13 @@
 using namespace std;
 
 //chi2 used to generate a chi2 distribution to check accuracy of fits
-TH1F *chi2 = new TH1F("chi2", "chi2", 50, 0, .5);
+TH1F *chi2 = new TH1F("chi2", "chi2", 500, 0, 5);
+TF1 *crystal;
+ofstream outFile;
 
 //Files to save good and bad fits. Enable once everything else works
 // TFile *goodFits = new TFile("goodFits.root", "RECREATE");
-// TFile *badFits = new TFile("badFits.root", "RECREATE");
+TFile *badFits = new TFile("badFits.root", "UPDATE");
 // TFile *allFits = new TFile("allFits.root", "RECREATE");
 
 //Function to return the slope ratio and its error
@@ -32,7 +35,14 @@ vector<float> getSlopeRatio(char slice, const float MAX1, const float MAX2, cons
 //Fucntion to fit amplitude distributions with a crystal ball fit
 TF1* crystalFit(TH1F &hist, int entries);
 
+
+TFile *g_file;
+TH1F *hist;
+TH1F *temphist;
+
 int main(int argc, char *argv[]){
+  
+  g_file = new TFile("myfile.root", "RECREATE");
 
   TGraphErrors *gr = new TGraphErrors();
   
@@ -64,7 +74,7 @@ int main(int argc, char *argv[]){
     sprintf(buffer,"mkdir -p /afs/cern.ch/user/w/wbenoit/work/PlotTools/EnergyResolution/Resolution%c/%g_%g_%g", slice, MAX1, MAX2, STEP);
     system(buffer);
     
-
+    outFile.open("FitParams.txt", ios::app);
     //Analyze each slice
     int num = 0;
     for(float pos = -1*MAX1; pos <= MAX1-STEP; pos+=STEP){
@@ -86,6 +96,7 @@ int main(int argc, char *argv[]){
       num++;
     }
     
+    outFile.close();
     //Make the graph look nice
     TString grTitle;
     grTitle.Form("Hodoscope %c Position (mm)", slice);
@@ -109,14 +120,16 @@ int main(int argc, char *argv[]){
     gr->Write("gr");
   }
   
-  //chi2->SaveAs("chi2.root");
+  chi2->SaveAs("chi2.root");
   
   return 1;
 }
 
 vector<float> getSlopeRatio(char slice, const float MAX1, const float MAX2, const float STEP, float xmin, float xmax, float ymin, float ymax){
+   
+  outFile << xmin << " " << xmax << " " << ymin << " " << ymax << endl << "//////////////////////////////////////////////////////////////" << endl;
   
-   TString fitFilename;
+  TString fitFilename;
 //   
 //   fitFilename.Form("goodFits/Fit_%c_%g_%g_%g_%g.root", slice, xmin, xmax, ymin, ymax);
 //   TFile *goodFits = new TFile(fitFilename.Data(), "RECREATE");
@@ -124,11 +137,13 @@ vector<float> getSlopeRatio(char slice, const float MAX1, const float MAX2, cons
 //   fitFilename.Form("badFits/Fit_%c_%g_%g_%g_%g.root", slice, xmin, xmax, ymin, ymax);
 //   TFile *badFits = new TFile(fitFilename.Data(), "RECREATE");
 //   
-  fitFilename.Form("allFits/Fit_%c_%g_%g_%g_%g.root", slice, xmin, xmax, ymin, ymax);
-  TFile *allFits = new TFile(fitFilename.Data(), "RECREATE");
+//   fitFilename.Form("allFits/Fit_%c_%g_%g_%g_%g.root", slice, xmin, xmax, ymin, ymax);
+//   TFile *allFits = new TFile(fitFilename.Data(), "RECREATE");
   
   vector<float> meanAmp, eX, eY, energy, slopes, errs, chi2s;
-  vector<TGraphErrors*> grs;
+  vector<TGraphErrors*> grs(2);
+  grs.at(0) = new TGraphErrors();
+  grs.at(1) = new TGraphErrors();
   vector<vector<int>> runs(5);
   vector<vector<float>> indivMeans(5), meanRatios(5);
   
@@ -138,11 +153,11 @@ vector<float> getSlopeRatio(char slice, const float MAX1, const float MAX2, cons
     else energy.push_back(i*50);
   }
   
-  (runs.at(0)).push_back(5650); (runs.at(0)).push_back(5651);
-  (runs.at(1)).push_back(5611); (runs.at(1)).push_back(5653); (runs.at(1)).push_back(5654);
-  (runs.at(2)).push_back(5619); (runs.at(2)).push_back(5656); (runs.at(2)).push_back(5655);
-  (runs.at(3)).push_back(5649); (runs.at(3)).push_back(5658); (runs.at(3)).push_back(5659);
-  (runs.at(4)).push_back(5630); (runs.at(4)).push_back(5660); (runs.at(4)).push_back(5661);
+  /*(runs.at(0)).push_back(5650);*/ (runs.at(0)).push_back(5651);
+  /*(runs.at(1)).push_back(5611); (runs.at(1)).push_back(5653);*/ (runs.at(1)).push_back(5654);
+  /*(runs.at(2)).push_back(5619); (runs.at(2)).push_back(5656);*/ (runs.at(2)).push_back(5655);
+  /*(runs.at(3)).push_back(5649); (runs.at(3)).push_back(5658);*/ (runs.at(3)).push_back(5659);
+  /*(runs.at(4)).push_back(5630); (runs.at(4)).push_back(5660);*/ (runs.at(4)).push_back(5661);
   
   vector<float> point(2); //Vector to be returned
   float cutoff;
@@ -150,12 +165,13 @@ vector<float> getSlopeRatio(char slice, const float MAX1, const float MAX2, cons
   point.push_back(0);
   point.push_back(0);
   
-  TFile *file = new TFile("myfile.root", "RECREATE");
+/*  TFile *file = new TFile("myfile.root", "RECREATE");*/
+  g_file->cd();
   
-  TH1F *hist = new TH1F("hist", "hist", 10000, -3000, 3000); //Histogram for the APDs
-  TH1F *temphist = new TH1F("temphist", "temphist", 10000, -3000, 3000);
   
-  TGraphErrors *gr = new TGraphErrors();
+  hist = new TH1F("hist", "hist", 10000, -3000, 3000); //Histogram for the APDs
+  temphist = new TH1F("temphist", "temphist", 10000, -3000, 3000);
+ 
   TFile *f;
   TTree *h4;
   TF1 *f0, *fit;
@@ -179,7 +195,7 @@ vector<float> getSlopeRatio(char slice, const float MAX1, const float MAX2, cons
 	plot.Form("fit_ampl[XTAL_C0_APD%d] >> temphist", apd);
 	cut.Form("(X[0] > %f) && (X[1] > %f) && (X[0] < %f) && (X[1] < %f) && (Y[0] > %f) && (Y[1] > %f) && (Y[0] < %f) && (Y[1] < %f)", xmin, xmin + xOffset, xmax, xmax + xOffset, ymin, ymin, ymax, ymax);
 	
-	file->cd();
+	g_file->cd();
 	
 	h4->Draw(plot.Data(), cut.Data());
 	
@@ -189,23 +205,25 @@ vector<float> getSlopeRatio(char slice, const float MAX1, const float MAX2, cons
 	long int entries = h4->Draw(plot.Data(), cut.Data()); //Replot with fit_ampl restriction
 	
 	cout << i << " " << j << endl;
+	
+	outFile << "\n" << runs[i][j] << endl;
 	f0 = crystalFit(*temphist, entries);
 	
 	indivMeans[i].push_back(f0->GetParameter(1));
 	temphist->Reset();
       }
       
-      meanRatios[i].push_back((indivMeans[i].back())/(indivMeans[i].at(0)));
+//      meanRatios[i].push_back((indivMeans[i].back())/(indivMeans[i].at(0)));
       
       //Resolves hole created by lack to 20 GeV, gain 50 run by filling the same number for the last two spots
-      if(i == 0) meanRatios[i].push_back(1);
-      
-      else meanRatios[i].push_back((indivMeans[i].back())/(indivMeans[i].at(1)));
+//       if(i == 0) meanRatios[i].push_back(1);
+//       
+//       else meanRatios[i].push_back((indivMeans[i].back())/(indivMeans[i].at(1)));
       
       meanRatios[i].push_back(1);
     }
     
-    meanRatios[3][0] = 3.7; //Temp fix to make everything run, because run 5649 was processed incorrectly. Shouldn't affect enf results. May actually be permanent...
+    //meanRatios[3][0] = 3.7; //Temp fix to make everything run, because run 5649 was processed incorrectly. Shouldn't affect end results. May actually be permanent...
     
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
     
@@ -222,10 +240,11 @@ vector<float> getSlopeRatio(char slice, const float MAX1, const float MAX2, cons
 	plot.Form("fit_ampl[XTAL_C0_APD%d] * %f >> temphist", apd,  meanRatios[i][j]);
 	cut.Form("(X[0] > %f) && (X[1] > %f) && (X[0] < %f) && (X[1] < %f) && (Y[0] > %f) && (Y[1] > %f) && (Y[0] < %f) && (Y[1] < %f)", xmin, xmin + xOffset, xmax, xmax + xOffset, ymin, ymin, ymax, ymax);
 	
-	file->cd();
+	g_file->cd();
 	h4->Draw(plot.Data(), cut.Data());
 	
 	cutoff = temphist->GetMean() - 3*temphist->GetRMS();
+	if(cutoff < 0.25*temphist->GetMean()) cutoff = 0.5*temphist->GetMean();
 	cut.Form("(X[0] > %f) && (X[1] > %f) && (X[0] < %f) && (X[1] < %f) && (Y[0] > %f) && (Y[1] > %f) && (Y[0] < %f) && (Y[1] < %f) && (fit_ampl[XTAL_C0_APD%d]*%f > %f)", xmin, xmin + xOffset, xmax, 
 		xmax + xOffset, ymin, ymin, ymax, ymax, apd, meanRatios[i][j], cutoff);
 		
@@ -236,22 +255,23 @@ vector<float> getSlopeRatio(char slice, const float MAX1, const float MAX2, cons
 	//float entries = hist->GetEntries();
 	//cout << "Hist entries: " << entries << endl;
 	
-	allFits->cd();
-	histname.Form("hist_%d_%d_%d", apd, i, j);
-	hist->Write(histname.Data());
+// 	allFits->cd();
+// 	histname.Form("hist_%d_%d_%d", apd, i, j);
+// 	hist->Write(histname.Data());
 	
 	temphist->Reset();
       }
             
       float entries = hist->GetEntries();
       
+      outFile << "\n" << energy.at(i) << endl;
       fit = crystalFit(*hist, entries);
       
       //Save histogram
       newFile->cd();
       histname.Form("APD%d_%d", apd, i); //tag
       hist->Write(histname.Data());
-      file->cd();
+      g_file->cd();
       
       //Use the fit parameters as values to fill the arrays
       meanAmp.push_back(fit->GetParameter(1));
@@ -260,29 +280,28 @@ vector<float> getSlopeRatio(char slice, const float MAX1, const float MAX2, cons
     }
     
     for(int i = 0; i < energy.size(); i++){
-      gr->SetPoint(i, energy.at(i), meanAmp.at(i));
-      gr->SetPointError(i, eX.at(i), eY.at(i));
+      grs.at(apd-1)->SetPoint(i, energy.at(i), meanAmp.at(i));
+      grs.at(apd-1)->SetPointError(i, eX.at(i), eY.at(i));
     }
 
     //Making the graphs nice
-    gr->GetXaxis()->SetTitle("Beam Energy");
-    gr->GetYaxis()->SetTitle("Mean Fit Amplitude");
+    grs.at(apd-1)->GetXaxis()->SetTitle("Beam Energy");
+    grs.at(apd-1)->GetYaxis()->SetTitle("Mean Fit Amplitude");
     
-    if(apd == 1) gr->SetMarkerStyle(21);
+    if(apd == 1) grs.at(apd-1)->SetMarkerStyle(21);
     else{
-      gr->SetMarkerStyle(20);
-      gr->SetMarkerColor(kBlue);
-      gr->SetLineColor(kBlue);
+      grs.at(apd-1)->SetMarkerStyle(20);
+      grs.at(apd-1)->SetMarkerColor(kBlue);
+      grs.at(apd-1)->SetLineColor(kBlue);
     }
     
     //Linear fit of the graph
-    TFitResultPtr r = gr->Fit("pol1", "SMEQ");
+    TFitResultPtr r = grs.at(apd-1)->Fit("pol1", "SMEQ");
     //Getting the slope and error of each fit
     slopes.push_back(r->Value(1));
     errs.push_back(r->ParError(1));
     chi2s.push_back(r->Chi2());
     
-    grs.push_back(gr);
     
     for(int i = 0; i < meanRatios.size(); i++){
       (meanRatios.at(i)).clear();
@@ -316,42 +335,74 @@ vector<float> getSlopeRatio(char slice, const float MAX1, const float MAX2, cons
   point.at(0)= slopes.at(1)/slopes.at(0);
   point.at(1) = point.at(0)*sqrt((errs.at(0)*errs.at(0))/(slopes.at(0)*slopes.at(0)) + (errs.at(1)*errs.at(1))/(slopes.at(1)*slopes.at(1))); //Error propagation
   
+  delete hist;
+  delete temphist;
+//   delete mg;
+  
   return point;
 }
 
 TF1* crystalFit(TH1F &hist, int entries){
   TString histname;
   
-  TF1 *g, *f;
+  TF1 *g;
   
   g = new TF1("g", "gaus", hist.GetMean() - 2*hist.GetRMS(), hist.GetMean() + 2*hist.GetRMS());
   g->SetParameters(1, hist.GetMean(), hist.GetRMS());
+  outFile << "Gaussian Start Parameters: " << g->GetParameter(0) << " " << g->GetParameter(1) << " " << g->GetParameter(2) << endl;
   g->SetParLimits(1, hist.GetMean() - hist.GetRMS()/2, hist.GetMean() + hist.GetRMS()/2);
-  g->SetParLimits(2, hist.GetRMS()/10, hist.GetRMS()/2);
+  outFile << "Gaussian Parameter 1 Limits: " << hist.GetMean() - hist.GetRMS()/2 << " " << hist.GetMean() + hist.GetRMS()/2 << endl;
+  g->SetParLimits(2, hist.GetRMS()/10, hist.GetRMS());
+  outFile << "Gaussian Parameter 2 Limits: " << hist.GetRMS()/10 << " " << hist.GetRMS() << endl;
   hist.Fit(g, "RQME");
+  outFile << "Gaussian End Parameters: " << g->GetParameter(0) << " " << g->GetParameter(1) << " " << g->GetParameter(2) << endl;
   
   //Fit the plot with a crystalball based on the Gaussian
-  f = new TF1("f","crystalball", hist.GetMean() - 2*hist.GetRMS(), hist.GetMean() + 2*hist.GetRMS());
-  f->SetParameters(1, g->GetParameter(1), g->GetParameter(2)/3, 1, .5);
-  f->SetParLimits(1, g->GetParameter(1) - g->GetParameter(2), g->GetParameter(1) + g->GetParameter(2));
-  f->SetParLimits(4, 0.1, 4);
-  f->SetParLimits(3, 0.1, 10);
-  f->SetParLimits(2, (g->GetParameter(2))/10, g->GetParameter(2)/2);
-  hist.Fit(f, "RQME");
+  crystal = new TF1("f","crystalball", hist.GetMean() - 2*hist.GetRMS(), hist.GetMean() + 1.5*hist.GetRMS());
+  crystal->SetParameters(1, g->GetParameter(1), g->GetParameter(2)/3, 1, .5);
+  outFile << "Crystal Start Parameters: " << crystal->GetParameter(0) << " " << crystal->GetParameter(1) << " " << crystal->GetParameter(2) << " " << crystal->GetParameter(3) << " " << crystal->GetParameter(4) <<endl;
+  crystal->SetParLimits(1, g->GetParameter(1) - g->GetParameter(2), g->GetParameter(1) + 2*g->GetParameter(2));
+  crystal->SetParLimits(2, (g->GetParameter(2))/5, g->GetParameter(2));
+  crystal->SetParLimits(3, 0.1, 5);
+  crystal->SetParLimits(4, 0.01, 10);
+  outFile << "Crystal Parameter 1 Limits: " << g->GetParameter(1) - g->GetParameter(2) << " " << g->GetParameter(1) + 2*g->GetParameter(2) << endl;
+  outFile << "Crystal Parameter 2 Limits: " << (g->GetParameter(2))/5 << " " << g->GetParameter(2) << endl;
+  outFile << "Crystal Parameter 3 Limits: " << 0.1 << " " << 5 << endl;
+  outFile << "Crystal Parameter 4 Limits: " << 0.01 << " " << 10 << endl;
+  hist.Fit(crystal, "RQME");
+  outFile << "Crystal End Parameters: " << crystal->GetParameter(0) << " " << crystal->GetParameter(1) << " " << crystal->GetParameter(2) << " " << crystal->GetParameter(3) << " " << crystal->GetParameter(4) <<endl;
+  outFile << "Chi2/Entries: " << crystal->GetChisquare()/entries << endl;
+  
+  //cout << crystal->GetChisquare() << endl;
+  chi2->Fill(crystal->GetChisquare()/entries);
   
   //Attempt to refit if the first failed for some reason, such as a bad Gaussian fit
-  if((f->GetChisquare()/entries - 0.2132) > 1*0.03559){ //Using values from chi2 distribution on 6 6 2 run
-    f->SetParameter(1, hist.GetMean());
-    f->SetParameter(2, hist.GetRMS()/3);
-    f->SetParLimits(1, hist.GetMean() - hist.GetRMS()/2, hist.GetMean() + hist.GetRMS()/2);
-    f->SetParLimits(2, hist.GetRMS()/10, hist.GetRMS()/2);
-    hist.Fit(f, "RQME");
+  if((crystal->GetChisquare()/entries - 0.2061) > 1*0.02973){ //Using values from chi2 distribution on 6 6 2 run
+    crystal->SetParameter(1, hist.GetMean());
+    crystal->SetParameter(2, hist.GetRMS()/3);
+    crystal->SetParLimits(1, hist.GetMean() - hist.GetRMS(), hist.GetMean() + 2*hist.GetRMS());
+    crystal->SetParLimits(2, hist.GetRMS()/10, hist.GetRMS() * 2/3);
+    outFile << "Crystal Refit Start Parameters: " << crystal->GetParameter(0) << " " << crystal->GetParameter(1) << " " << crystal->GetParameter(2) << " " << crystal->GetParameter(3) << " " << crystal->GetParameter(4) << endl;
+    outFile << "Crystal Refit Parameter 1 Limits: " << hist.GetMean() - hist.GetRMS() << " " << hist.GetMean() + 2*hist.GetRMS() << endl;
+    outFile << "Crystal Refit Parameter 2 Limits: " << hist.GetRMS()/10 << " " << hist.GetRMS() << endl;
+    hist.Fit(crystal, "RQME");
+    outFile << "Crystal Refit End Parameters: " << crystal->GetParameter(0) << " " << crystal->GetParameter(1) << " " << crystal->GetParameter(2) << " " << crystal->GetParameter(3) << " " << crystal->GetParameter(4) << endl;
+    outFile << "Chi2/Entries: " << crystal->GetChisquare()/entries << endl;
     
-//     if((f->GetChisquare()/entries1 - 0.2132) > 1*0.03559){
-//       badFits->cd();
-//       histname.Form("APD1_%d_%g_%g_%g_%g", i, xmin, xmax, ymin, ymax); //tag
-//       hist.Write(histname.Data());
-//     }
+    if(abs(crystal->GetParameter(1) - (hist.GetMean() + 2*hist.GetRMS())) < 1){
+      crystal->SetParameter(1, hist.GetMean() + hist.GetRMS()/2);
+      crystal->SetParLimits(1, hist.GetMean() - hist.GetRMS(), hist.GetMean() + hist.GetRMS());
+      hist.Fit(crystal, "RQME");
+      outFile << "Crystal Re-Refit End Parameters: " << crystal->GetParameter(0) << " " << crystal->GetParameter(1) << " " << crystal->GetParameter(2) << " " << crystal->GetParameter(3) << " " << crystal->GetParameter(4) << endl;
+      outFile << "Chi2/Entries: " << crystal->GetChisquare()/entries << endl;
+    }
+    
+    if((crystal->GetChisquare()/entries - 0.2061) > 1*0.02973){
+      badFits->cd();
+      outFile << "Bad Fit!" << endl;
+      //histname.Form("APD1_%d_%g_%g_%g_%g", i, xmin, xmax, ymin, ymax); //tag
+      hist.Write(/*histname.Data()*/);
+    }
 //     else{
 //     goodFits->cd();
 //     histname.Form("APD1_%d_%g_%g_%g_%g", i, xmin, xmax, ymin, ymax); //tag
@@ -359,5 +410,7 @@ TF1* crystalFit(TH1F &hist, int entries){
 //     }
   }
   
-  return f;
+  delete g;
+  
+  return crystal;
 }
