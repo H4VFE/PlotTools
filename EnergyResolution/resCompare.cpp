@@ -1,3 +1,15 @@
+/*
+
+This program takes the files created by resolutionChain.cpp
+and presents them in a useful format. The final output is
+a canvas with three multigraphs: slope ratio vs X, slope ratio
+vs Y, and Y/X vs position.
+
+Will Benoit
+December 14th 2016
+
+*/
+
 #include "TFile.h"
 #include "TH1F.h"
 #include "TCanvas.h"
@@ -11,13 +23,16 @@
 
 using namespace std;
 
+//This program takes 4 inputs: the half range of the fixed position, the min and max of the varying position, and the step size of the slice examined
+//This program is easier to understand after reading resolutionChain.cpp
 int main(int argc, char *argv[]){
   
-  const float FIXMAX = atof(argv[1]), VARMIN = atof(argv[2]), VARMAX = atof(argv[3]), STEP = atof(argv[4]);
+  const float FIXMAX = atof(argv[1]), VARMIN = atof(argv[2]), VARMAX = atof(argv[3]), STEP = atof(argv[4]); //Assigning inputs
   
   TCanvas *c = new TCanvas("c", "c", 1800, 600);
   c->Divide(3,1);
   
+  //Creating multigraphs for final output
   TMultiGraph *mgX = new TMultiGraph("mgX", "Normalized Calibration Constant on X");
   TMultiGraph *mgY = new TMultiGraph("mgY", "Normalized Calibration Constant on Y");
   TMultiGraph *mgXY = new TMultiGraph("mgXY", "Ratio of Normalized Calibration Constants for Y/X");
@@ -25,10 +40,11 @@ int main(int argc, char *argv[]){
   TString filename;
   TFile *file;
   
-  int range = (int) (VARMAX - VARMIN);
-  range++;
-  vector<TGraphErrors*> graphs(range*3);
+  int range = (int) (VARMAX - VARMIN); //Number of graphs for each multigraph
+  range++; //Adding one to account for the edge. This is separate just to remember that it has to happen
+  vector<TGraphErrors*> graphs(range*3); //Vector of TGraphErrors, for each graph of the 3 multigraphs
   
+  //Loop to get each of the graphs created by resolutionChain.cpp. Also sets line color, marker color, and line style. For color, different shades of blue are used for comparison
   for(int i = 0; i < range; i++){
     
     filename.Form("./ResolutionX/%g_%g_%g/resolutionX_%g_%g_%g.root", FIXMAX, VARMIN+i, STEP, FIXMAX, VARMIN+i, STEP);
@@ -46,13 +62,20 @@ int main(int argc, char *argv[]){
     graphs.at(i+range)->SetMarkerStyle(20+i);
   }
   
-  /////////////////////////  Normalizing  /////////////////////////
+  /////////////////////////  Normalizing the X and Y Plots  /////////////////////////
   
   float max1 = 0, max2 = 0;
   
-  int numPts = (2*FIXMAX)/STEP; //Number of points between -2 and 2
+  int N = (int) graphs.at(0)->GetN();
   
-  for(int pt = 0; pt < numPts; pt++){
+  int numPts = 2*(3-(-3))/STEP; //Number of points between -3 and 3 - just makes it clear where the number comes from. Normalization is done within this range.
+  if(numPts > N) numPts = N; //If the range is less than -3 to 3, sets the number of points to the max possible
+  
+  int startPt = (N - numPts)/2;
+  int endPt = startPt + numPts;
+  
+  //Finding the maximum value in the range of all graphs
+  for(int pt = startPt; pt < endPt; pt++){
     for(int grs = 0; grs < range; grs++){
       if(max1 < graphs.at(grs)->GetY()[pt])
 	max1 = graphs.at(grs)->GetY()[pt];
@@ -62,11 +85,11 @@ int main(int argc, char *argv[]){
     }
   }
    
+  //Scales each point in each graph by the appropriate normalization factor. Also, creates the ratio graphs, propagates error, and adds each graph to the proper multigraph
   for(int grs = 0; grs < range; grs++){
-    int N = (int) 2 * graphs.at(grs)->GetN();
-    double ratio[N];
-    double errRatioX[N];
-    double errRatioY[N];
+    double ratio[2*N];
+    double errRatioX[2*N];
+    double errRatioY[2*N];
     double eX1, eX2, eY1, eY2, ptX, ptY;
     
     
@@ -99,7 +122,7 @@ int main(int argc, char *argv[]){
     mgXY->Add(graphs.at(grs+2*range));
   }
     
-    
+  //Used to fit stuff, but it wasn't all that necessary
 //   TF1 *p1 = new TF1("p1", "[0]*(x-[1])*(x-[2]) + [3]", -1*FIXMAX, FIXMAX);
 //   TF1 *p2 = new TF1("p2", "[0]*(x-[1])*(x-[2]) + [3]", -1*FIXMAX, FIXMAX);
 //   
@@ -115,11 +138,11 @@ int main(int argc, char *argv[]){
 //   float fitDiff = fitmax1 - fitmax2;
 //   
 //   cout << "X Center: " << fitmax1 << " Y Center: " << fitmax2 << " Difference: " << fitDiff << endl;
+
   /////////////////////////  Drawing the X Graph  /////////////////////////
   c->cd(1);
   mgX->Draw("apl");
   mgX->GetXaxis()->SetTitle("Hodoscope X Position (mm)");
-  //mgX->GetYaxis()->SetTitle("m1+m2");
   mgX->GetYaxis()->SetTitle("m2/m1");
   mgX->GetYaxis()->SetTitleOffset(1.75);
   mgX->GetYaxis()->SetRangeUser(.9, 1.05);
@@ -141,7 +164,6 @@ int main(int argc, char *argv[]){
   c->cd(2);
   mgY->Draw("apl");
   mgY->GetXaxis()->SetTitle("Hodoscope Y Position (mm)");
-  //mgY->GetYaxis()->SetTitle("m1+m2");
   mgY->GetYaxis()->SetTitle("m2/m1");
   mgY->GetYaxis()->SetTitleOffset(1.75);
   mgY->GetYaxis()->SetRangeUser(.9, 1.05);
@@ -152,7 +174,7 @@ int main(int argc, char *argv[]){
   legY->SetNColumns(2);
   for(int i = 0; i < range; i++){
     entryName.Form("X in [-%g,%g]", (VARMIN+i)/2, (VARMIN+i)/2);
-    legY->AddEntry(graphs.at(i+range),entryName.Data(),"lp");
+    legY->AddEntry(graphs.at(i+range), entryName.Data(), "lp");
   }
   legY->Draw();
   
@@ -163,7 +185,6 @@ int main(int argc, char *argv[]){
   mgXY->Draw("apl");
   mgXY->GetXaxis()->SetTitle("Hodoscope Position (mm)");
   mgXY->GetYaxis()->SetTitle("(my2/my1)/(mx2/mx1)");
-  //mgXY->GetYaxis()->SetTitle("(my1+my2)/(mx1+mx2)");
   mgXY->GetYaxis()->SetTitleOffset(1.75);
   mgXY->GetYaxis()->SetRangeUser(.95, 1.05);
   

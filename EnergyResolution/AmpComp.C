@@ -1,22 +1,38 @@
+/*
+
+This macro compares the distributions of different
+quantities stored in the ROOT file, such as b_slope, 
+b_rms, or amp_max. Can change by using the replace 
+command. Not super useful, but decent if you need to
+compare a bunch of runs or something.
+
+
+Will Benoit
+December 14th 2016
+
+*/
+
+
 {
-  TFile *g_file = new TFile("dummy.root", "RECREATE");
+  TFile *g_file = new TFile("dummy.root", "RECREATE"); //Dummy file to make things work
   
-  TChain *chain  = new TChain("h4");
-  
-  vector<TH1F*> hists(18);
-  vector<int> runs;
+  vector<TH1F*> hists(18); //Vector to hold all the histograms
+  vector<int> runs; //Vector of run numbers
   runs.push_back(5270); runs.push_back(5307); runs.push_back(5308); runs.push_back(5309); runs.push_back(5305); runs.push_back(5651); runs.push_back(5654); runs.push_back(5655);  runs.push_back(5659); runs.push_back(5661);
  
-  TH1F *temphist = new TH1F("temphist", "temphist", 50, 0, 10);
+  TH1F *temphist = new TH1F("temphist", "temphist", 50, 0, 10); //Temporary histogram to be added to the vector of histograms
   
+  //Variable declarations
   TTree *h4;
   TFile *f;
   TString filename, plot, cut, legname, histname;
-  float scale, cutoff1, cutoff2, xscale;
+  float scale, cutoff1, cutoff2;
   
+  //Used for tracking stuff
   int color = 1;
   int num = 0;
   
+  //Canvas and legend creation
   TCanvas *c = new TCanvas("c", "c", 1000, 1000);
   c->Divide(1,2);
   
@@ -25,15 +41,17 @@
   leg1->SetNColumns(2);
   leg2->SetNColumns(2);
   
-  for(auto i : runs){
+  for(auto i : runs){//Go through all runs
     
-    if(i == 5308 || i == 5309 || i == 5270) continue;
+    if(i == 5308 || i == 5309 || i == 5270) continue; //Can look at only one cardinal direction. Comment out to look at all directions.
     
+    //Initiazling each member of hists
     histname.Form("Run %d, APD1", i);
     hists.at(num) = new TH1F(histname.Data(), "APD1", 50, 0, 10);
     histname.Form("Run %d, APD2", i);
     hists.at(num+1) = new TH1F(histname.Data(), "APD2", 50, 0, 10);
     
+    //Different hodoscope cuts for each run. These may need to be tweaked.
     switch (i){
       case 5270:
 	legname.Form("North");
@@ -57,21 +75,12 @@
 	break;
     }
     
-    switch (i){
-      case 5305: xscale = 3; break;
-      case 5651: xscale = 5; break;
-      case 5654: xscale = 2; break;
-      case 5659: xscale = 0.6667; break;
-      case 5661: xscale = 0.5; break;
-      default: xscale = 1; break;
-    }
-    
     filename.Form("./ntuples_v1/analysis_%d.root", i);
     f = TFile::Open(filename.Data());
     h4 = (TTree*) f->Get("h4");
     
     g_file->cd();
-    
+    //Calculating cutoff values for whatever quantity
     h4->Draw("b_rms[XTAL_C0_APD1] >> temphist", "abs(X[0]) < 5 && abs(X[1]) < 5 && abs(Y[0]) < 5 && abs(Y[1]) < 5", "goff");
     cutoff1 = temphist->GetMean() - 3*temphist->GetRMS();
     if(cutoff1 < 0) cutoff1 = temphist->GetMean();
@@ -87,8 +96,8 @@
     
     temphist->Reset();
     
+    //Drawing final plots, adding them to the vector, normalizing, and making them look nice
     plot.Form("b_rms[XTAL_C0_APD1] >> temphist");
-    //plot.Form("b_rms[XTAL_C0_APD1]*%f >> temphist", xscale);
     
     h4->Draw(plot.Data(), cut.Data(), "goff");
     
@@ -105,7 +114,6 @@
     leg1->AddEntry(hists.at(num), legname.Data(), "l");
     
     plot.Form("b_rms[XTAL_C0_APD2] >> temphist");
-    //plot.Form("b_rms[XTAL_C0_APD2]*%f >> temphist", xscale);
 
     h4->Draw(plot.Data(), cut.Data(), "goff");
     
@@ -121,15 +129,14 @@
     hists.at(num+1)->Draw("same");
     leg2->AddEntry(hists.at(num+1), legname.Data(), "l");
     
-    color++;
-    num += 2;
+    color++; //Changing color
+    num += 2; //Tracking where the histogram should be placed
   }
   
+  //Adding legends
   c->cd(1);
   leg1->Draw();
   c->cd(2);
   leg2->Draw();
   
-   TFile *file = TFile::Open("RestrictedOverlaps_brms.root", "UPDATE");
-   c->Write("East");
 }

@@ -1,3 +1,26 @@
+/*
+
+This program compares slices of the crystal face
+in both the X and Y direction. For each slice, 
+the calibration constant between peak fit amplitude
+and beam energy is calculated for both APDs. The ratio
+of these constants is plotted as a function of position
+on the crystal face. The files generated are used by
+resCompare.cpp.
+
+This program is called resolutionChain because it
+originally extended resolution.cpp with the use of
+TChains. However, vectors were easier, so there aren't
+TChains anymore. In any case, this method of examining
+the energy resolution was not particularly successful, 
+so I'm uncertain how useful this code will be in the
+future.
+
+Will Benoit
+December 15th 2016
+
+*/
+
 #include "TTree.h"
 #include "TH1F.h"
 #include "TGraph.h"

@@ -1,3 +1,14 @@
+/*
+
+This macro was identical to AmpRatio.C, except for the
+specific hodoscope cuts. Now fairly outdated, probably use
+AmpRatio instead. Comments can be found in AmpRatio.C
+
+Will Benoit
+December 8th 2016
+
+*/
+
 {
   TFile *g_file = new TFile("dummy.root", "RECREATE");
   
