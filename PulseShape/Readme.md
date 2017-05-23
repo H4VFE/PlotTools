@@ -1,0 +1,4 @@
+The purpose of this directory is to use Macros/ files to create amplitude vs. time plots from  Data_Files/ TB files from Summer 2016 runs. Macros/Single_Pulse.C searches through spills and events from a hardcoded run for a non zero amplitude event and plots this. All outputs are sent to Outputs/, and images saved in Images/. Can also use Macros/Single_Pulse.C to find 'good' spills and events that have non zero amplitudes. After finding good spills and events, can send vectors of spill and event numbers to another root Macro (or same one) to extract 'y' data from these events which can be normalized, averaged and plotted. 
+
+The ultimate goal is to make qualitative and quantitative comparisons of averaged, normalized waveforms from Russian and Chinese crystals. Knowing how results from these crystals differ can be useful when analyzing CMS data from these types of crystals. Different WF_ch's correspond to different crystals. XTAL_C3 corresponds to a Russian crystal.
+

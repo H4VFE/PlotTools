@@ -1,0 +1,27 @@
+/*
+
+This macro creates 1D distributions of the maximum amplitudes
+for 5 runs that cover crystal C0. Cuts on the hodoscope restrict
+the beam away from the edges of the crystal and the hodoscope.
+
+Creates files for use by FindCutoffs.C
+
+Will Benoit
+December 8th 2016
+
+*/
+
+{
+  
+/*
+
+h->GetXaxis()->SetTitle("X axis title");
+h->GetYaxis()->SetTitle("Y axis title");
+
+*/
+
+  TFile *file = TFile::Open("Data_Files/analysis_5195.root"); // Open data file.
+  h4->Draw("WF_val:WF_ch");
+  file->GetXaxis()->SetTitle("X axis title");
+  file->GetYaxis()->SetTitle("Y axis title");
+}
