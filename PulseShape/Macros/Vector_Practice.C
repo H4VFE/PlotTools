@@ -12,10 +12,10 @@
 
   cout << "myvector stores " << int(myvector.size()) << " numbers.\n";
   
-  for (vector<int>::const_iterator i = myvector.begin(); i != myvector.end(); ++i)
+  for (vector<int>::size_type i = 1; i != myvector.size(); i++) // i=1 means start at first, rather than zeroth element.
 
 	{
-	cout << *i << endl;
+	cout << "myvector [" << i << "] = " << myvector[i] << endl;
 	}
 
   return 0;
