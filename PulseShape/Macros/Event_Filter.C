@@ -1,13 +1,28 @@
 {
-  /* The purpose of this macro is to take an analysis_*.root file and obtain the 'good' events and spills, where goodness is defined by some threshold of minimum peak WF_val. This should return events that are unlikely to be noise. The data from these events can then be normalized, averaged and plotted.
+  /* The purpose of this macro is to take an analysis_*.root file from /eos/cms/store/group/dpg_ecal/comm_ecal/upgrade/testbeam/ECALTB_H4_Jul2016/ntuples_V1/ntuples/ and obtain the 'good' events and spills, where goodness is defined by some threshold of peak WF_val. This should return events that are unlikely to be noise. The data from these events can then be normalized, averaged and plotted.
 
 Abe Tishelman-Charny
 24-5-17
    */
 
+  // Prompt user for run number (maybe later make terminal argument)
+  int run_num, max_spills, max_events;
+
+  cout << "Please enter a run number: " << endl;
+  cin >> run_num;
+  cout << "Run number = " << run_num << endl;
+
+  cout << "Please enter max number of spills to scan: " << endl;
+  cin >> max_spills;
+  cout << "Max spills = " << max_spills << endl;
+
+  cout << "Please enter max number of events to scan per spill: " << endl;
+  cin >> max_events;
+  cout << "Max events = " << max_events << endl;
+
   // Open File, obtain tree
-  TString run; // Can change to user input run if desired
-  run.Form("Data_Files/analysis_5196.root"); // Testing with run 5196 
+  TString run; 
+  run.Form("Data_Files/analysis_%d.root",run_num);  
   TFile *file = TFile::Open(run.Data()); // Open data file.
   h4 = (TTree*) file->Get("h4"); // Get h4 tree from current opened file
 
@@ -25,7 +40,7 @@ Abe Tishelman-Charny
   TGraph *gr = new TGraph();
 
   // Find good spills (determined by spill_max threshold)
-  for (Int_t i =0; i < 5; i++) // i < max spill number. Can be user set or generalized to max spill number.
+  for (Int_t i =0; i < max_spills; i++) // i < max spill number. Can be user set or generalized to max spill number.
 	{
 
          cut.Form("WF_ch == XTAL_C3 && spill == %d",i);
@@ -37,7 +52,7 @@ Abe Tishelman-Charny
 	 spill_max = *max_element(ydata,ydata+range); // Max WF_val range over range of data	 
  	 printf("Spill %d maximum WF_val = %d\n",i,spill_max);
 
-	 if (spill_max > 100) // Set threshold for spill's max WF_val. If spill's max value is less than this, spill number not saved. 
+	 if (spill_max > 50) // Set threshold for spill's max WF_val. If spill's max value is less than this, spill number not saved. 
 		{
 
 		vector <int> Spill_Vector;
@@ -82,7 +97,7 @@ Abe Tishelman-Charny
 	
 	// cout << "spills ["<< i << "] =  " << spills[i] << endl;
  
-  	for (Int_t j =0; j < 10; j++) // i < max event number. Need to obtain this.
+  	for (Int_t j =0; j < max_events; j++) // i < max event number. Need to obtain this.
 		{
 		// cout << "i = " << i << endl;
 		// cout << "spills[" << i << "] = " << spills[i] << endl;
@@ -132,5 +147,4 @@ Abe Tishelman-Charny
         }
 
   */
-
 }
