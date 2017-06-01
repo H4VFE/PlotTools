@@ -33,6 +33,8 @@ Abe Tishelman-Charny
 
   // Find spills that likely has clear pulse shapes
   TString cut;
+  TString channel;
+  channel.Form("XTAL_D3"); // ex: "XTAL_C3"
   Int_t spill = 0;
   Int_t spill_max = 0; 
 
@@ -43,7 +45,7 @@ Abe Tishelman-Charny
   for (Int_t i =0; i < max_spills; i++) // i < max spill number. Can be user set or generalized to max spill number.
 	{
 
-         cut.Form("WF_ch == XTAL_C3 && spill == %d",i);
+         cut.Form("WF_ch == %s && spill == %d",channel.Data(),i);
  	 gr->Set(0); // Set number of points to zero.
          h4->Draw("WF_val:WF_time >> gr", cut.Data(), "goff"); // goff = graphics off, colz = colors
 	 // gr->SetMaximum(0); // Sets maximum to 0
@@ -101,7 +103,7 @@ Abe Tishelman-Charny
 		{
 		// cout << "i = " << i << endl;
 		// cout << "spills[" << i << "] = " << spills[i] << endl;
-         	event_cut.Form("WF_ch == XTAL_C3 && spill == %d && event == %d",spills[i],j);
+         	event_cut.Form("WF_ch == %s && spill == %d && event == %d",channel.Data(),spills[i],j);
 		
  		gr->Set(0); // Set number of points to zero.
 		
