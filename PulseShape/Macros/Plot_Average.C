@@ -15,8 +15,9 @@
 
   // ------------ Uncomment below if running alone.
 
-   /*
+  /*
   
+  // Perform this block of code if running this macro alone.
   // Access tree
   file = TFile::Open("Data_Files/analysis_5196.root");
   TTree *h4;
@@ -72,18 +73,26 @@
   cout << "Number of events = " << events << endl;
   cout << endl;
 
-  // int *g[];
-  // size_t size;
-
   Double_t denom = 0; // Number of good, centered events
   Int_t event_number = -1; // Index, not value. Used for graphing on multigraph
   TString full_cut; // Used for (spill, event) cut
 
+  // Peak information
   Double_t x_peak = 0;
+  Double_t x_peaks[150] = {0}; // array of all x values at y maximum
+  Double_t weights[150] = {0};
   Int_t x_peak_index = 0;
-  int avg_start_index; // index, not value
+  int avg_start_index; 
+
+  // For filtering multipeak events
+  double before = 0;
+  double after = 0;
+  double localmax = 0;
+  int localmaxcounter = 0;
 
   // Create average wave x and y arrays
+
+  // average x array
   int xrange = 400;  // Avg waveform size. Should be set to ( x axis range * 5 ) b/c 5 data points per second
   Double_t xavg[400] = {0}; // Avg waveform xdata array initialization
   xavg[0] = -20; // Avg Waveform starting value. Should be set to x axis min.
@@ -91,20 +100,19 @@
   for (int i = 1; i < xrange; i++)
 	{
 
-	xavg[i] = xavg[i-1] + 0.2;
+	xavg[i] = xavg[i-1] + 0.2; // Currently known 0.2 ns intervals between data points.
 
 	}
 
+  // average y array
   Double_t yavg[1024] = {0}; // Currently hardcoding knowing 1024 y values per event. Should eventually dynamically allocate size.
   
-  // Create TGraphs and Multigraph
-  TGraph *g[100]; // For now hardcoding many graphs. Needs to be >= number of events plotted. Should eventually be dynamically allocated
+  // Create Graphs, Multigraph and Histogram
+  TGraph *g[150]; // For now hardcoding many graphs. Needs to be >= number of events plotted. Should eventually be dynamically allocated
   TString Multigraph_Title;
   Multigraph_Title.Form("Run 5196, Channel %s Waveform",channel.Data());
   TMultiGraph *mg = new TMultiGraph("mg",Multigraph_Title.Data()); // Put all graphs here
-
-  // TGraph *g = new TGraph[events]; // might use for dynamic size 
-  // TGraph *g[events] = new TGraph(); // Hardcoding 10. Want *g[events] 
+  TH1F *del_t = new TH1F("del_t", "Delta t counts",100,0,100); // Historam for x_peaks[]
   
   // Loop over first dimension entries (spills). i = spill index. [i][0] = spill number.
   for (int i = 0; i < good_spills_events.size(); i++)
@@ -134,7 +142,7 @@
 
 			ydata[k] = ydata[k] / event_max;
 			
-			// Recording x position of event_max
+			// Record x position of event_max
 			if (ydata[k] == 1) 
 				{
 				
@@ -147,64 +155,63 @@
 				// Set x value of y peak
 				x_peak = xdata[k];
 				cout << "Value of x position at peak = " << x_peak << " ns " << endl;
-				
-				}
-			
-			}
-		
-		// Filter very off-centered waveforms
-		// Should very off centered waves actually be included, just shifted? Maybe should just filter multiple peak waves.
-		// Not sure meaning of a single peak very off centered wave. Maybe should be kept maybe not. Keeping this for now.
-		
-		for (int k = 256; k < 512 ; k++)
-			{
-
-			if (ydata[k] > 0.5)
-				{
-
-				cout << "Bad wave detected." << endl;
-				
-
-				if (event_number == (events - 1) )
-					{
-
-					cout << "Final event is bad." << endl;
-					goto last;
-
-					}
-
-				goto end;
-
-				}
-
-			}
-		
-
-		for (int k = 512; k < range ; k++) // Start searching at halfway point (512 for 1024 points). Eventually generalize size
-			{
-
-			if (ydata[k] > 0.25) // Will skip if normalized value > 0.25 exists past halfway point. 
-				{
-
-				cout << "Very Off-centered wave detected" << endl;
-
-				if (event_number == (events - 1) )
-					{
-
-					cout << "Final event is very off centered." << endl;
-					goto last;
+				del_t->Fill(x_peak);
+				//x_peaks[event_number] = x_peak; // add to array of all x_peak's
+				// Above line, can also push back to x_peaks vector then set xpeaks array value equal to xpeaks vector element.
 	
+				/*if (x_peak >= 5)
+					{
+	
+					cout << "Delta t is greater than threshold." << endl;
+					goto end;
+
 					}
-
-				goto end;
-
-				// return; // Might want to use this instead of goto end.
-
+				*/ // I think this won't be used since want to remove based on deviation from average, need to loop through all events first.
 				}
 			
 			}
+		
+		// Filter Multiple Peak waves, as these are likely result of non isolated particle event (not sure if worded correctly).
+		
+		for (int k = 300; k < 1024 ; k++) // start and end one off from limits to access k-1 and k+1 elements
+			{
 
-		// Rest of loop only runs for centered events (unless final event is off-centered, then skips to averaging)
+			// before = ydata[k-1];
+			// after = ydata[k+1];
+	
+			// Start looking past where first pulse expected. Might not be the best way.
+
+			// only filter above certain values to avoid counting local noise maxes as peaks.
+			//if (ydata[k] >=0.5 && ydata[k] >= before && ydata[k] >= after)
+			if (ydata[k] >= 0.5) // && ( ydata[k] - ydata[k-50] ) > 0.2 && ( ydata[k] - ydata[k+50] ) > 0.2)
+				{
+				
+				// Might want to count local maxes by integrating peaks	
+				localmaxcounter += 1;
+				if (localmaxcounter >= 2)
+
+					{
+
+					if (event_number == ( events - 1 ) )
+						{
+
+						cout << "Final event has multiple peaks." << endl;
+
+						goto last; // If final event has multiple peaks, go to averaging.
+
+						}
+
+					cout << "Event has multiple peaks." << endl;
+
+					goto end; // If there are at least two peaks, skip event
+
+					}				
+
+				}
+
+			}
+
+		// Rest of loop only runs for single peak events (unless final event is multi-peaked, then skips to averaging)
 
 		// Move event peak to x = 0 ns
 		for (int k = 0; k < range; k++)
@@ -214,13 +221,12 @@
 
 			}
 
-
 		// Add event to multigraph		
 		g[event_number] = new TGraph(range,xdata,ydata); // event_number is just an index, not number from root file
-		mg->Add(g[event_number]);		  
+		mg->Add(g[event_number]);
 
-		// Begin averaging process by adding y values
-		for (int l = 0; l < xrange; l++) // l < range 
+		for(int l = 0; l < xrange; l++) 
+
 			{
 
 			yavg[l] += ydata[avg_start_index];
@@ -236,6 +242,22 @@
 	
 		if (event_number == (events-1)) // -1 to account for different starting values
   			{
+
+			//del_t->FillN(1,x_peaks,weights,1); // add x_peaks to histogram (delta_t's) to visualize spread. Remove deviation from average
+			
+			TCanvas *c2 = new TCanvas("c2","Histo",200,10,700,500);
+			del_t->Draw();
+			// Maybe loop through events again after determining average delta_t, THEN add and divide for average.
+
+			for (int event_number = 0; event_number < events; event_number++)
+				{
+
+				// use event_number for peak and plotting in loop.
+				// Add event to multigraph              
+				g[event_number] = new TGraph(range,xdata,ydata); // event_number is just an index, not number from root file
+			        mg->Add(g[event_number]);
+												
+				}
 
 			cout << endl;	
 			cout << "Number of averaged events: " << denom << endl;
@@ -257,11 +279,12 @@
 
 			}
 
-		end: // Skip to here if non-centered event
+		end: // Skip to here if multipeak event, not final event. 
 
-		cout << " " << endl; // It seems something is necessary after the 'end' goto, so I put this here. In future may be cleaner to use 'return' rather than goto in off-centered wave loop.
-                }
-          }     
+		cout << " " << endl; // It seems something is necessary after the 'end' goto, so I put this here. In future may be cleaner to use 'return' rather than goto in multipeak event loop.
+                } // event loop
+
+          } // spill loop
 
   // Create canvas
   TCanvas *c1 = new TCanvas("c1","Canvas Title",200,10,700,500);  
@@ -286,10 +309,12 @@
   // Save plot as .png and .root 
   TString Plot_Title;
   TString File_Title; 
-  Plot_Title.Form("Images/analysis_5196_%s_AvgWave.png",channel.Data()); 
-  File_Title.Form("Outputs/analysis_5196_%s_AvgWave.root",channel.Data());
+  Plot_Title.Form("Images/testinganalysis_5196_%s_AvgWave.png",channel.Data()); 
+  File_Title.Form("Outputs/testinganalysis_5196_%s_AvgWave.root",channel.Data());
   c1->SaveAs(Plot_Title.Data());
   c1->SaveAs(File_Title.Data());
+  c2->SaveAs("Images/Delta_t.png"); // Save Histogram
+  c2->SaveAs("Outputs/Delta_t.root");
 
   // Next step may be to obtain average waveform data for each channel and plot averages on same graph to compare.
 
