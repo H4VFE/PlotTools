@@ -4,3 +4,4 @@ Macros/Event_Filter.C searches through spills and events of a given run data fil
 
 The ultimate goal is to make qualitative and quantitative comparisons of averaged, normalized waveforms from different Russian crystals. Knowing how results from these crystals differ can be useful when analyzing CMS data from these crystals. Different WF_ch's (information stored in analysis_* root file) correspond to different crystals. XTAL_C3 corresponds to a Russian crystal.
 
+To run, go to PulseShape/ Directory and run "root -l Macros/Event_Filter.C Macros/Plot_Average" in terminal with desired data in directory PulseShape/Data_Files.
