@@ -108,9 +108,9 @@
   Double_t yavg[1024] = {0}; // Currently hardcoding knowing 1024 y values per event. Should eventually dynamically allocate size.
   
   // Create Graphs, Multigraph and Histogram
-  TGraph *g[150]; // For now hardcoding many graphs. Needs to be >= number of events plotted. Should eventually be dynamically allocated
+  TGraph *g[500]; // For now hardcoding many graphs. Needs to be >= number of events plotted. Should eventually be dynamically allocated
   TString Multigraph_Title;
-  Multigraph_Title.Form("Run 5196, Channel %s Waveform",channel.Data());
+  Multigraph_Title.Form("Run %d, Channel %s Waveform",run_num,channel.Data());
   TMultiGraph *mg = new TMultiGraph("mg",Multigraph_Title.Data()); // Put all graphs here
   TH1F *del_t = new TH1F("del_t", "Delta t counts",100,0,100); // Historam for x_peaks[]
   
@@ -277,6 +277,8 @@
 			avg->SetLineWidth(3); // Make stand out from singular events
 			mg->Add(avg);
 
+			goto outer;
+
 			}
 
 		end: // Skip to here if multipeak event, not final event. 
@@ -285,6 +287,10 @@
                 } // event loop
 
           } // spill loop
+
+  outer: // Skip to here if all events read
+
+  cout << "Finished Scanning. " << endl;
 
   // Create canvas
   TCanvas *c1 = new TCanvas("c1","Canvas Title",200,10,700,500);  
@@ -306,15 +312,19 @@
   // gStyle->SetLegendBorderSize(3);
   leg->Draw();
   
-  // Save plot as .png and .root 
+  // Save plot and histogram as .png and .root 
   TString Plot_Title;
-  TString File_Title; 
-  Plot_Title.Form("Images/testinganalysis_5196_%s_AvgWave.png",channel.Data()); 
-  File_Title.Form("Outputs/testinganalysis_5196_%s_AvgWave.root",channel.Data());
+  TString File_Title;
+  TString Histo_Title;
+  TString Histo_File_Title;
+  Plot_Title.Form("Images/%d_%s_AvgWave.png",run_num,channel.Data()); 
+  File_Title.Form("Root_Files/%d_%s_AvgWave.root",run_num,channel.Data());
+  Histo_Title.Form("Images/%d_%s_Delta_t.png",run_num,channel.Data());
+  Histo_File_Title.Form("Root_Files/%d_%s_Delta_t.root",run_num,channel.Data());
   c1->SaveAs(Plot_Title.Data());
   c1->SaveAs(File_Title.Data());
-  c2->SaveAs("Images/Delta_t.png"); // Save Histogram
-  c2->SaveAs("Outputs/Delta_t.root");
+  c2->SaveAs(Histo_Title.Data()); 
+  c2->SaveAs(Histo_File_Title.Data());
 
   // Next step may be to obtain average waveform data for each channel and plot averages on same graph to compare.
 
