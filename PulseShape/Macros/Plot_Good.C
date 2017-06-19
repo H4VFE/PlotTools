@@ -1,32 +1,11 @@
 {
-  /* The purpose of this macro is to start with spill/event vector(s) containing 'good' (determined by set threshold) events, normalize data, average it, then plot average waveform on same plot as all event waveforms that make up average. Next step is to compare Russian and Chinese average waveforms qualitatively, and quantitatively.
 
-  25-5-17
-  Abe Tishelman-Charny
+  // The purpose of this macro is to plot average wave using good spills/events text file.
 
-   */ 
-  
-  // Some links I used
-  //
-  // https://root.cern.ch/root/roottalk/roottalk03/4741.html
-  // http://www.cplusplus.com/reference/algorithm/max_element/
-  // http://www.cartotalk.com/index.php?showtopic=2943
-  // https://stackoverflow.com/questions/879603/remove-an-array-element-and-shift-the-remaining-ones
+  ifstream spills_events("Text_Files/test.txt");
 
-  // ------------ Uncomment below if running alone.
-
-  // /*
-  
-  // Perform this block of code if running this macro alone.
-  // Access tree
-  file = TFile::Open("Data_Files/analysis_5196.root");
-  TTree *h4;
-  h4 = (TTree*) file->Get("h4");
-  int run_num = 5196;
-
-  // Hardcode vector with run 5196 good events
   vector < vector < int >  > good_spills_events;
-
+  /*
   	for (int i = 0; i < 5; i++ ) // i < 5  
         	{
         
@@ -34,41 +13,115 @@
        		good_spills_events.push_back(spillvector);
 
         	} 
-  
-  good_spills_events[0].push_back(4);
-  good_spills_events[0].push_back(9);
-  good_spills_events[1].push_back(6);
-  good_spills_events[1].push_back(15);
-  good_spills_events[2].push_back(9);
-  good_spills_events[2].push_back(21);
-  good_spills_events[3].push_back(11);
-  good_spills_events[3].push_back(39);
-  good_spills_events[4].push_back(14); 
-  good_spills_events[4].push_back(29); 
-  
-  TGraph *gr = new TGraph(); 
+  */  
 
   TString channel;
-  channel.Form("XTAL_C3");  
- 
-  // */
-
-  // ------------- Uncomment above if running alone
-
-  // Find number of events
-  Int_t events = 0;
+  char X_let, X_num;
   
-  for (int i = 0; i < good_spills_events.size(); i++)
-	{
+  int run_num;
+  int events;
 
-	for (int j = 1; j < good_spills_events[i].size(); j++) // start at j=1 so not to count spill numbers
+  spills_events.ignore(5,'\n');
+  spills_events >> run_num;
+  spills_events.ignore(500,'\n');
+  spills_events.ignore(23,'\n');
+  spills_events >> events;
+  spills_events.ignore(500,'\n');
+  spills_events.ignore(500,'\n');
+  spills_events.ignore(500,'\n');
+  spills_events.ignore(6,'\n');
+  spills_events >> X_let;
+  spills_events >> X_num;
+  spills_events.ignore(500,'\n');
+  spills_events.ignore(500,'\n');
+  spills_events.ignore(500,'\n');
+  //spills_events.ignore(500,'\n');
+
+  // Should now be up to first spill.
+
+  int total_spills = 0;
+  int spill_num;
+  int event_num;
+
+  string temp;
+  /*
+  string s;
+
+  while ( getline(spills_events,s) )
+	{
+	if ( s.empty() )
+		{
+	
+		cout << "Empty line." << endl;	
+
+		}
+	else 
 		{
 
-		events += 1;	
+		spills_events >> s;
+		cout << "Line =" << s << endl;		
 
 		}
 
 	}
+*/
+
+  // Loop that reads events for each spill
+  while ( getline(spills_events,temp) )
+  	{
+
+	// Create spill vector for each spill
+	vector <int> spillvector;
+  	good_spills_events.push_back(spillvector);
+	
+	//spills_events >> spill_num;
+  	//good_spills_events[total_spills].push_back(spill_num);
+	//spills_events.ignore(500,'\n');	
+
+	spills_events >> temp;
+	cout << "Temp = '" << temp << "'\n";
+	while ( temp.empty() == false)
+		{
+	
+		spills_events >> temp;
+		//good_spills_events[total_spills].push_back(event_num);
+		//spills_events.ignore(500,'\n');
+		//spills_events >> temp;
+		cout << "Temp = '" << temp << "'\n";
+		}	
+
+	spills_events.ignore(500,'\n');
+	total_spills += 1;
+  	cout << "Outer Loop." << endl;
+	}
+
+  spills_events.close();
+
+  cout << "run_num = " << run_num << endl;
+  channel.Form("XTAL_%c%c",X_let,X_num);
+  cout << "channel.Data() = " << channel.Data() << endl;
+  
+  TGraph *gr = new TGraph(); 
+
+  for (int i = 0; i < good_spills_events.size(); i++)
+        {
+        for (int j = 0; j < good_spills_events[i].size(); j++)
+  		{
+
+       	        cout << "good_spills_events[" << i << "][" << j << "] = "  << good_spills_events[i][j] << endl;
+	        
+		}
+        } 
+  
+ /*
+
+  // Access tree
+  
+  TString Data_Name;
+  Data_Name.Form("Data_Files/analysis_%d.root",run_num);
+  file = TFile::Open(Data_Name.Data());
+  TTree *h4;
+  h4 = (TTree*) file->Get("h4");
 
   cout << endl; 
   cout << "Number of events = " << events << endl;
@@ -165,14 +218,6 @@
 				//x_peaks[event_number] = x_peak; // add to array of all x_peak's
 				// Above line, can also push back to x_peaks vector then set xpeaks array value equal to xpeaks vector element.
 	
-				/*if (x_peak >= 5)
-					{
-	
-					cout << "Delta t is greater than threshold." << endl;
-					goto end;
-
-					}
-				*/ // I think this won't be used since want to remove based on deviation from average, need to loop through all events first.
 				}
 			
 			}
@@ -337,10 +382,10 @@
   TString File_Title;
   TString Histo_Title;
   TString Histo_File_Title;
-  Plot_Title.Form("Images/%d_%s_AvgWave.png",run_num,channel.Data()); 
-  File_Title.Form("Root_Files/%d_%s_AvgWave.root",run_num,channel.Data());
-  Histo_Title.Form("Images/%d_%s_Delta_t.png",run_num,channel.Data());
-  Histo_File_Title.Form("Root_Files/%d_%s_Delta_t.root",run_num,channel.Data());
+  Plot_Title.Form("Images/%d_%s_AvgWave_test.png",run_num,channel.Data()); 
+  File_Title.Form("Root_Files/%d_%s_AvgWave_test.root",run_num,channel.Data());
+  Histo_Title.Form("Images/%d_%s_Delta_t_test.png",run_num,channel.Data());
+  Histo_File_Title.Form("Root_Files/%d_%s_Delta_t_test.root",run_num,channel.Data());
   c1->SaveAs(Plot_Title.Data());
   c1->SaveAs(File_Title.Data());
   c2->SaveAs(Histo_Title.Data()); 
@@ -348,4 +393,5 @@
 
   // Next step may be to obtain average waveform data for each channel and plot averages on same graph to compare.
 
+*/
 }

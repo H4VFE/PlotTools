@@ -1,0 +1,14 @@
+Run: 5196
+Number of Good Events: 1
+Spills scanned: 5
+Events scanned per Spill: 10
+XTAL: C3
+Event Threshold = 100
+
+Top Value is Spill Number, Subsequent Values are Event Numbers. Spills separated by empty line. 
+2
+ 
+3
+ 
+4
+9

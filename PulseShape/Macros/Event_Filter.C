@@ -9,7 +9,7 @@ Abe Tishelman-Charny
   int run_num, max_spills, max_events;
   char column;
   int row;
-  int event_thres = 500;
+  int event_thres; // Threshold in ADC counts
 
   cout << "Please enter a run number: " << endl;
   cin >> run_num;
@@ -30,6 +30,10 @@ Abe Tishelman-Charny
   cout << "Please enter max number of events to scan per spill: " << endl;
   cin >> max_events;
   cout << "Max events = " << max_events << endl;
+  
+  cout << "Please enter a WF_val threshold: " << endl;
+  cin >> event_thres;
+  cout << "event_thres = " << event_thres << endl;
 
   // Open File, obtain tree
   TString run; 
@@ -62,7 +66,7 @@ Abe Tishelman-Charny
          h4->Draw("WF_val:WF_time >> gr", cut.Data(), "goff"); // goff = graphics off, colz = colors
 	 // gr->SetMaximum(0); // Sets maximum to 0
 	 Double_t* ydata = h4->GetV1();
-	 Int_t range = h4->GetSelectedColumns();       
+	 Int_t range = h4->GetSelectedRows();       
 	 spill_max = *max_element(ydata,ydata+range); // Max WF_val range over range of data	 
  	 printf("Spill %d maximum WF_val = %d\n",i,spill_max);
 
@@ -82,10 +86,12 @@ Abe Tishelman-Charny
 
   // Search each good spill for good events
   // Probably need faster way to scan events for non zero max amplitude. Alternative is check every event which will take very long time (> 1 hour ? )
+
+  cout << "Right before event loop.\n";
  
   for (vector<int>::size_type i = 0; i != spills.size(); i++) 
 	{
-	
+	cout << "Begin event loop.\n";
 	// cout << "spills ["<< i << "] =  " << spills[i] << endl;
  
   	for (Int_t j =0; j < max_events; j++) // i < max event number. Need to obtain this.
@@ -97,7 +103,7 @@ Abe Tishelman-Charny
  		gr->Set(0); // Set number of points to zero.
 		
 		// Alternative way to clear graph
-		/*for (Int_t k = 0; k < h4->GetSelectedColumns(); k++)
+		/*for (Int_t k = 0; k < h4->GetSelectedRows(); k++)
 			{
 
 			gr->SetPoint(k,0,0);
@@ -107,7 +113,7 @@ Abe Tishelman-Charny
          	
 		h4->Draw("WF_val:WF_time >> gr", event_cut.Data(), "goff"); // goff = graphics off, colz = colors
 	 	Double_t* eventydata = h4->GetV1();
-		Int_t range = h4->GetSelectedColumns();       
+		Int_t range = h4->GetSelectedRows();       
 		event_max = *max_element(eventydata,eventydata+range);	 
  	 	printf("Spill %d event %d maximum WF_val = %d\n",spills[i],j,event_max);
 
@@ -122,26 +128,49 @@ Abe Tishelman-Charny
 
 	} 
 
+  // Find number of events
+  
+  int num_events = 0;
+
+  for (int i = 0; i < good_spills_events.size(); i++)
+        {
+
+        for (int j = 1; j < good_spills_events[i].size(); j++) // start at j=1 so not to count spill numbers
+                {
+
+                num_events += 1;
+
+                }
+
+        }
+
+  cout << endl;
+  cout << "Number of events = " << num_events << endl;
+  cout << endl;
+
   // Save good events in text file
   ofstream Event_File;
   TString File_Name;
   seconds = time(0);
   File_Name.Form("Text_Files/%d_%c%d_Good_Events_%d.txt",run_num,column,row,(int)seconds); // Save with time in seconds since 1/1/1970 so not to overwrite any files. Can change names and relocate later.
   Event_File.open(File_Name.Data());
-  Event_File << "Run: " << run_num << " Good Events\n";
+  Event_File << "Run: " << run_num << "\n";
+  Event_File << "Number of Good Events: " << num_events << endl; 
   Event_File << "Spills scanned: " << max_spills << "\n";
   Event_File << "Events scanned per Spill: " << max_events << endl;
-  Event_File << "XTAL: " << column << "_" << row << endl;
-  Event_File << "Row: " << row << endl;
-  Event_File << "Column: " << column << endl;
+  Event_File << "XTAL: " << column << "" << row << endl;
+  // Event_File << "Row: " << row << endl;
+  // Event_File << "Column: " << column << endl;
   Event_File << "Event Threshold = " << event_thres << "\n\n";
-
+ 
+  Event_File << "Top Value is Spill Number, Subsequent Values are Event Numbers. Spills separated by empty line.";
   for (int i = 0; i < good_spills_events.size(); i++)
         {
 	
-	Event_File << "Spill:" << endl;
+	//Event_File << "Spill:" << endl;
+	Event_File << " \n";
 	Event_File << good_spills_events[i][0] << endl; 
-	Event_File << "Events: " << endl;
+	//Event_File << "Events: " << endl;
         
 	for (int j = 1; j < good_spills_events[i].size(); j++) // Start at j = 1 b/c j = 0 is spill number
   		{
