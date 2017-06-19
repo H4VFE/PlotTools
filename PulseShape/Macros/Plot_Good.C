@@ -2,9 +2,10 @@
 
   // The purpose of this macro is to plot average wave using good spills/events text file.
 
-  ifstream spills_events("Text_Files/test.txt");
+  ifstream spills_events("Text_Files/5360_C2_Good_Events.txt");
 
   vector < vector < int >  > good_spills_events;
+  vector < vector < string > > good_spills_events_string;
   /*
   	for (int i = 0; i < 5; i++ ) // i < 5  
         	{
@@ -44,64 +45,130 @@
   int event_num;
 
   string temp;
-  /*
+  
   string s;
 
   while ( getline(spills_events,s) )
 	{
-	if ( s.empty() )
-		{
-	
-		cout << "Empty line." << endl;	
-
-		}
-	else 
-		{
 
 		spills_events >> s;
-		cout << "Line =" << s << endl;		
+		cout << "Line = '" << s << "'\n";
+		vector <string> spillvector;
+		good_spills_events_string.push_back(spillvector);
+		good_spills_events_string[total_spills].push_back(s);
 
-		}
+		spills_events >> s;
+
+		if (s == "End")
+			{
+
+			break;
+
+			}
+
+		else if (s == "-")
+			{
+
+			total_spills +=1;
+
+			}		
+
+		else 
+			{
+			while (s != "-")
+				{
+				good_spills_events_string[total_spills].push_back(s);		
+				cout << "In While" << endl;		
+				spills_events >> s;
+				cout << "s = " << s << endl;
+			
+				if (s == "-")
+					{
+					
+					total_spills +=1;
+
+					}	
+			
+				if (s == "End")
+					{
+					goto after;
+					}
+
+				}
+			}
 
 	}
-*/
+  after:
+  cout << "Out of Loop." << endl;
 
+  spills_events.close();
+
+  for (int i = 0; i < good_spills_events_string.size(); i++)
+        {
+        for (int j = 0; j < good_spills_events_string[i].size(); j++)
+  		{
+
+       	        cout << "good_spills_events_string[" << i << "][" << j << "] = "  << good_spills_events_string[i][j] << endl;
+	        
+		}
+        }
+  
+  for (int i = 0; i < good_spills_events_string.size(); i++)
+        {
+	vector <int> newspillvector;
+	good_spills_events.push_back(newspillvector);	
+
+        for (int j = 0; j < good_spills_events_string[i].size(); j++)
+  		{
+		good_spills_events[i].push_back(atoi(good_spills_events_string[i][j].c_str()));
+       	        cout << "good_spills_events[" << i << "][" << j << "] = "  << good_spills_events[i][j] << endl;
+	        
+		}
+        }
+
+/*
   // Loop that reads events for each spill
-  while ( getline(spills_events,temp) )
-  	{
+  //while ( getline(spills_events,temp) )
+  //while ( spills_events.good() )  
+  for (int j = 0; j < 500; j++) // for now hardcoding max of 500 lines.
+	{
 
 	// Create spill vector for each spill
 	vector <int> spillvector;
   	good_spills_events.push_back(spillvector);
 	
-	//spills_events >> spill_num;
-  	//good_spills_events[total_spills].push_back(spill_num);
-	//spills_events.ignore(500,'\n');	
-
+	spills_events >> spill_num;
+  	cout << "Spill_num = " << spill_num << endl;
+	good_spills_events[total_spills].push_back(spill_num);
+	spills_events.ignore(500,'\n');	
 	spills_events >> temp;
 	cout << "Temp = '" << temp << "'\n";
-	while ( temp.empty() == false)
+	//spills_events.ignore(500,'\n');
+
+	if ( temp != "-")
 		{
 	
+		spills_events >> event_num;
+		cout << "event_num = " << event_num << endl;
+		good_spills_events[total_spills].push_back(event_num);
+		spills_events.ignore(500,'\n');
 		spills_events >> temp;
-		//good_spills_events[total_spills].push_back(event_num);
-		//spills_events.ignore(500,'\n');
-		//spills_events >> temp;
 		cout << "Temp = '" << temp << "'\n";
 		}	
 
 	spills_events.ignore(500,'\n');
 	total_spills += 1;
-  	cout << "Outer Loop." << endl;
+	//spills_events >> spill_num;
+	cout << "temp = " << temp << endl;
+  	//cout << "Temp = '" << temp  << "'\n";
+
+	if ( temp == "")
+	break;
+ 
 	}
 
-  spills_events.close();
+  //spills_events.close();
 
-  cout << "run_num = " << run_num << endl;
-  channel.Form("XTAL_%c%c",X_let,X_num);
-  cout << "channel.Data() = " << channel.Data() << endl;
-  
-  TGraph *gr = new TGraph(); 
 
   for (int i = 0; i < good_spills_events.size(); i++)
         {
@@ -112,8 +179,15 @@
 	        
 		}
         } 
+ */
+
+
+  cout << "run_num = " << run_num << endl;
+  channel.Form("XTAL_%c%c",X_let,X_num);
+  cout << "channel.Data() = " << channel.Data() << endl;
   
- /*
+  TGraph *gr = new TGraph(); 
+ 
 
   // Access tree
   
@@ -393,5 +467,5 @@
 
   // Next step may be to obtain average waveform data for each channel and plot averages on same graph to compare.
 
-*/
+
 }

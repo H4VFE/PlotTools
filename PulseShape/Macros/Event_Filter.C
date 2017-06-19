@@ -163,22 +163,24 @@ Abe Tishelman-Charny
   // Event_File << "Column: " << column << endl;
   Event_File << "Event Threshold = " << event_thres << "\n\n";
  
-  Event_File << "Top Value is Spill Number, Subsequent Values are Event Numbers. Spills separated by empty line.";
+  Event_File << "Top Value is Spill Number, Subsequent Values are Event Numbers. Spills separated by ";
   for (int i = 0; i < good_spills_events.size(); i++)
         {
 	
 	//Event_File << "Spill:" << endl;
-	Event_File << " \n";
-	Event_File << good_spills_events[i][0] << endl; 
+	Event_File << "-\n";
+	Event_File << good_spills_events[i][0] << "\n"; 
 	//Event_File << "Events: " << endl;
         
 	for (int j = 1; j < good_spills_events[i].size(); j++) // Start at j = 1 b/c j = 0 is spill number
   		{
 
-		Event_File << good_spills_events[i][j] << endl; 
+		Event_File << good_spills_events[i][j] << "\n"; 
 
 	        }
         }
+
+  Event_File << "End\n";
 
 Event_File.close(); 
  
