@@ -2,7 +2,7 @@
 
   // The purpose of this macro is to plot average wave using good spills/events text file.
 
-  ifstream spills_events("Text_Files/5360_C2_Good_Events.txt");
+  ifstream spills_events("Text_Files/5291_C2_Good_Events.txt");
 
   vector < vector < int >  > good_spills_events;
   vector < vector < string > > good_spills_events_string;
@@ -236,7 +236,7 @@
   Double_t yavg[1024] = {0}; // Currently hardcoding knowing 1024 y values per event. Should eventually dynamically allocate size.
   
   // Create Graphs, Multigraph and Histogram
-  TGraph *g[500]; // For now hardcoding many graphs. Needs to be >= number of events plotted. Should eventually be dynamically allocated
+  TGraph *g[2000]; // For now hardcoding many graphs. Needs to be >= number of events plotted. Should eventually be dynamically allocated
   TString Multigraph_Title;
   Multigraph_Title.Form("Run %d, Channel %s Waveform",run_num,channel.Data());
   TMultiGraph *mg = new TMultiGraph("mg",Multigraph_Title.Data()); // Put all graphs here

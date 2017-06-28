@@ -87,17 +87,16 @@ Abe Tishelman-Charny
   // Search each good spill for good events
   // Probably need faster way to scan events for non zero max amplitude. Alternative is check every event which will take very long time (> 1 hour ? )
 
-  cout << "Right before event loop.\n";
+  bool first_good = false; // True when first good event is found.
  
   for (vector<int>::size_type i = 0; i != spills.size(); i++) 
 	{
-	cout << "Begin event loop.\n";
-	// cout << "spills ["<< i << "] =  " << spills[i] << endl;
+
+	first_good = false;
  
   	for (Int_t j =0; j < max_events; j++) // i < max event number. Need to obtain this.
 		{
-		// cout << "i = " << i << endl;
-		// cout << "spills[" << i << "] = " << spills[i] << endl;
+
          	event_cut.Form("WF_ch == %s && spill == %d && event == %d",channel.Data(),spills[i],j);
 		
  		gr->Set(0); // Set number of points to zero.
@@ -117,13 +116,26 @@ Abe Tishelman-Charny
 		event_max = *max_element(eventydata,eventydata+range);	 
  	 	printf("Spill %d event %d maximum WF_val = %d\n",spills[i],j,event_max);
 
-	 	if (event_max > event_thres) // Set threshold for event's max WF_val. If max value is less than this, event number not saved. 
+		if (event_max > 100)
 			{
 
-			good_spills_events.at(i).push_back(j); // Enter good event numbers for spill number
+			first_good = true;
 
 			}
 
+	 	if (event_max > event_thres) // Set threshold for event's max WF_val. If max value is less than this, event number not saved. 
+			{
+			//first_good = true;
+			good_spills_events.at(i).push_back(j); // Enter good event numbers for spill number
+						
+			}
+
+		if (first_good) 
+			{
+
+			j += 49; // add 49, another one added at next loop iteration. Do this because know events should be spaced by 50.
+
+			}
 		}  
 
 	} 
