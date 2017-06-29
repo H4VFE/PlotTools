@@ -3,8 +3,8 @@
   // The purpose of this macro is the compare average waveform plots from different crystals.
   // Want to plot multiple Average waveforms on same plot, 
 
-  ifstream file1("Text_Files/5522_XTAL_C3_Data.txt");
-  ifstream file2("Text_Files/5291_XTAL_C2_Data.txt");
+  ifstream file1("Text_Files/5196_XTAL_C3_Data_1498766423.txt"); //5522_XTAL_C3_Data.txt");
+  ifstream file2("Text_Files/5291_XTAL_C2_Data_1498767384.txt"); //5291_XTAL_C2_Data.txt");
 
   //string xarray_string[400];
   //string yarray_string[400];
@@ -12,16 +12,20 @@
   double xarray1[400];
   double yarray1[400];
   double ydiff1[400];
+  double yerror1[400];
 
   double xarray2[400];
   double yarray2[400];
   double ydiff2[400];
+  double yerror2[400];
 
   double xaverage[400];
   double yaverage[400];
  
   double ratio[400];
   double difference[400];
+
+  double xerror[400] = {0};
  
   // skip four lines (header)
 
@@ -75,9 +79,11 @@
   
 	file1 >> xarray1[i];
 	file1 >> yarray1[i];
+	file1 >> yerror1[i];
 
 	file2 >> xarray2[i];
 	file2 >> yarray2[i];
+	file2 >> yerror2[i];
 
 	xaverage[i] = ( ( xarray1[i] + xarray2[i] ) / 2.0 ); 
 	yaverage[i] = ( ( yarray1[i] + yarray2[i] ) / 2.0 );
@@ -113,7 +119,8 @@
 
   //TGraph *gr1 = new TGraph(400,xarray1,difference);
   //TGraph *gr1 = new TGraph(400,xarray1,ydiff1);
-  TGraph *gr1 = new TGraph(400,xarray1,yarray1);
+  //TGraph *gr1 = new TGraph(400,xarray1,yarray1);
+  TGraphErrors *gr1 = new TGraphErrors(400,xarray1,yarray1,xerror,yerror1);
   gr1->SetName("gr1");
   gr1->SetLineColor(4);      
 
@@ -121,14 +128,15 @@
   
   //TGraph *gr4 = new TGraph(400,xarray1,difference);
   //TGraph *gr2 = new TGraph(400,xarray2,ydiff2);
-  TGraph *gr2 = new TGraph(400,xarray2,yarray2);
+  //TGraph *gr2 = new TGraph(400,xarray2,yarray2);
+  TGraphErrors *gr2 = new TGraphErrors(400,xarray2,yarray2,xerror,yerror2);
   gr2->SetName("gr2");
   gr2->SetLineColor(6);  
 
-  TGraph *gr3 = new TGraph(400,xarray1,difference);
-  gr3->SetName("gr3");
-  gr3->SetLineColor(1); // black
-  gr3->SetLineStyle(2);
+  //TGraph *gr3 = new TGraph(400,xarray1,difference);
+  //gr3->SetName("gr3");
+  //gr3->SetLineColor(1); // black
+  //gr3->SetLineStyle(2);
 
   //TGraph *avg = new TGraph(400,xaverage,yaverage);
   //avg->SetName("avg");
@@ -136,7 +144,7 @@
 
   mg->Add(gr1);
   mg->Add(gr2);
-  mg->Add(gr3);
+  //mg->Add(gr3);
   //mg->Add(avg);
   mg->Draw("AL");
   mg->GetXaxis()->SetTitle("Centered Time (ns)");

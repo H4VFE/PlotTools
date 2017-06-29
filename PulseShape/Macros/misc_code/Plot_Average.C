@@ -1,152 +1,80 @@
 {
+  /* The purpose of this macro is to start with spill/event vector(s) containing 'good' (determined by set threshold) events, normalize data, average it, then plot average waveform on same plot as all event waveforms that make up average. Next step is to compare Russian and Chinese average waveforms qualitatively, and quantitatively.
 
-  /* 
-  
-  The purpose of this macro is to take good spills/events text file and output plot of average waveform, and text file of x,y data of average waveform, and calculate uncertainty (Standard error of the mean).
-  
+  25-5-17
   Abe Tishelman-Charny
-  29 June, 2017
 
-  */
-
-  // Read good events file
-  ifstream spills_events("Text_Files/C2Test.txt");
-
-  // Create vector with good spills/events
-  vector < vector < int >  > good_spills_events;
-  vector < vector < string > > good_spills_events_string;
-
-  // Read header info
-  TString channel;
-  char X_let, X_num;
-  int run_num;
-  int events;
-
-  spills_events.ignore(5,'\n');
-  spills_events >> run_num;
-  spills_events.ignore(500,'\n');
-  spills_events.ignore(23,'\n');
-  spills_events >> events;
-  spills_events.ignore(500,'\n');
-  spills_events.ignore(500,'\n');
-  spills_events.ignore(500,'\n');
-  spills_events.ignore(6,'\n');
-  spills_events >> X_let;
-  spills_events >> X_num;
-  spills_events.ignore(500,'\n');
-  spills_events.ignore(500,'\n');
-  spills_events.ignore(500,'\n');
-
-  // Should now be up to first spill. Begin reading spill/event numbers and saving to vector.
-
-  int total_spills = 0;
-  int spill_num;
-  int event_num;
-
-  string temp;
-  string s;
-
-  while ( getline(spills_events,s) )
-	{
-
-		spills_events >> s;
-		//cout << "Line = '" << s << "'\n";
-		vector <string> spillvector;
-		good_spills_events_string.push_back(spillvector);
-		good_spills_events_string[total_spills].push_back(s);
-
-		spills_events >> s;
-
-		if (s == "End")
-			{
-
-			break;
-
-			}
-
-		else if (s == "-")
-			{
-
-			total_spills +=1;
-
-			}		
-
-		else 
-			{
-			while (s != "-")
-				{
-				good_spills_events_string[total_spills].push_back(s);		
-				//cout << "In While" << endl;		
-				spills_events >> s;
-				//cout << "s = " << s << endl;
-			
-				if (s == "-")
-					{
-					
-					total_spills +=1;
-
-					}	
-			
-				if (s == "End")
-					{
-					goto after;
-					}
-
-				}
-			}
-
-	}
-
-  after:
-  cout << "Finished reading text file." << endl;
-
-  // Might need print message after goto statement. Not sure. Including to be safe.
+   */ 
   
-  spills_events.close(); 
- 
-  // Print good spills/events. Good for checking that text file was read correctly.
-  for (int i = 0; i < good_spills_events_string.size(); i++)
-        {
-        for (int j = 0; j < good_spills_events_string[i].size(); j++)
-  		{
+  // Some links I used
+  //
+  // https://root.cern.ch/root/roottalk/roottalk03/4741.html
+  // http://www.cplusplus.com/reference/algorithm/max_element/
+  // http://www.cartotalk.com/index.php?showtopic=2943
+  // https://stackoverflow.com/questions/879603/remove-an-array-element-and-shift-the-remaining-ones
 
-       	        cout << "good_spills_events_string[" << i << "][" << j << "] = "  << good_spills_events_string[i][j] << endl;
-	        
-		}
-        }
+  // ------------ Uncomment below if running alone.
+
+  // /*
   
-  for (int i = 0; i < good_spills_events_string.size(); i++)
-        {
-	vector <int> newspillvector;
-	good_spills_events.push_back(newspillvector);	
-
-        for (int j = 0; j < good_spills_events_string[i].size(); j++)
-  		{
-		good_spills_events[i].push_back(atoi(good_spills_events_string[i][j].c_str()));
-       	        cout << "good_spills_events[" << i << "][" << j << "] = "  << good_spills_events[i][j] << endl;
-	        
-		}
-        }
-
-  cout << "run_num = " << run_num << endl;
-  channel.Form("XTAL_%c%c",X_let,X_num);
-  cout << "channel.Data() = " << channel.Data() << endl;
-  
-  TGraph *gr = new TGraph(); 
-  seconds = time(0);
-
-  // Access tree  
-  TString Data_Name;
-  Data_Name.Form("Data_Files/analysis_%d.root",run_num);
-  file = TFile::Open(Data_Name.Data());
+  // Perform this block of code if running this macro alone.
+  // Access tree
+  file = TFile::Open("Data_Files/analysis_5196.root");
   TTree *h4;
   h4 = (TTree*) file->Get("h4");
+  int run_num = 5196;
+
+  // Hardcode vector with run 5196 good events
+  vector < vector < int >  > good_spills_events;
+
+  	for (int i = 0; i < 5; i++ ) // i < 5  
+        	{
+        
+        	vector <int> spillvector;
+       		good_spills_events.push_back(spillvector);
+
+        	} 
+  
+  good_spills_events[0].push_back(4);
+  good_spills_events[0].push_back(9);
+  good_spills_events[1].push_back(6);
+  good_spills_events[1].push_back(15);
+  good_spills_events[2].push_back(9);
+  good_spills_events[2].push_back(21);
+  good_spills_events[3].push_back(11);
+  good_spills_events[3].push_back(39);
+  good_spills_events[4].push_back(14); 
+  good_spills_events[4].push_back(29); 
+  
+  TGraph *gr = new TGraph(); 
+
+  TString channel;
+  channel.Form("XTAL_C3");  
+ 
+  // */
+
+  // ------------- Uncomment above if running alone
+
+  // Find number of events
+  Int_t events = 0;
+  
+  for (int i = 0; i < good_spills_events.size(); i++)
+	{
+
+	for (int j = 1; j < good_spills_events[i].size(); j++) // start at j=1 so not to count spill numbers
+		{
+
+		events += 1;	
+
+		}
+
+	}
 
   cout << endl; 
   cout << "Number of events = " << events << endl;
   cout << endl;
 
-  Double_t denom = 0; // Number of good, single peak events.
+  Double_t denom = 0; // Number of good, centered events
   Int_t event_number = -1; // Index, not value. Used for graphing on multigraph
   TString full_cut; // Used for (spill, event) cut
 
@@ -158,6 +86,9 @@
   int avg_start_index; 
 
   // For filtering multipeak events
+  double before = 0;
+  double after = 0;
+  double localmax = 0;
   int localmaxcounter = 0;
 
   // Create average wave x and y arrays
@@ -177,34 +108,17 @@
   // average y array
   Double_t yavg[1024] = {0}; // Currently hardcoding knowing 1024 y values per event. Should eventually dynamically allocate size.
   
-  // Create uncertainty arrays
-  Double_t yerror[400] = {0};
-  Double_t xerror[400] = {0};
-  Double_t stdev[400] = {0};
-  //double alldata[400][2000] = {0}; // 2000 as max number of events. Should generalize.
-  vector < vector < Double_t >  > alldata;
-
-  for (int i = 0; i < 400; i++)
-  	{
-
-	vector < Double_t > row;
-	alldata.push_back(row);
-	}
- 
   // Create Graphs, Multigraph and Histogram
-  TGraph *g[2000]; // For now hardcoding many graphs. Needs to be >= number of events plotted. Should eventually be dynamically allocated
+  TGraph *g[500]; // For now hardcoding many graphs. Needs to be >= number of events plotted. Should eventually be dynamically allocated
   TString Multigraph_Title;
   Multigraph_Title.Form("Run %d, Channel %s Waveform",run_num,channel.Data());
   TMultiGraph *mg = new TMultiGraph("mg",Multigraph_Title.Data()); // Put all graphs here
-  //TString Histo;
-  //Histo.Form("Run %d, Channel %s Delta t counts",run_num,channel.Data());
-  //TH1F *del_t = new TH1F("del_t",Histo.Data(),100,0,100); // Historam for x_peaks[]
+  TString Histo;
+  Histo.Form("Run %d, Channel %s Delta t counts",run_num,channel.Data());
+  TH1F *del_t = new TH1F("del_t",Histo.Data(),100,0,100); // Historam for x_peaks[]
 
-  //TCanvas *c2 = new TCanvas("c2","Histo",200,10,700,500);
 
-  cout << "good_spills_events.size() = " << good_spills_events.size() << endl;
-  //cout << "good_spills_events.size() = " << good_spills_events.size();
-
+  TCanvas *c2 = new TCanvas("c2","Histo",200,10,700,500);
  
   // Loop over first dimension entries (spills). i = spill index. [i][0] = spill number.
   for (int i = 0; i < good_spills_events.size(); i++)
@@ -247,28 +161,39 @@
 				// Set x value of y peak
 				x_peak = xdata[k];
 				cout << "Value of x position at peak = " << x_peak << " ns " << endl;
-				//del_t->Fill(x_peak);
+				del_t->Fill(x_peak);
 				//x_peaks[event_number] = x_peak; // add to array of all x_peak's
 				// Above line, can also push back to x_peaks vector then set xpeaks array value equal to xpeaks vector element.
 	
+				/*if (x_peak >= 5)
+					{
+	
+					cout << "Delta t is greater than threshold." << endl;
+					goto end;
+
+					}
+				*/ // I think this won't be used since want to remove based on deviation from average, need to loop through all events first.
 				}
 			
 			}
 		
-		// Filter Multiple Peak waves, since purpose of study is to look at shape of single pulse 
-		// If amplitude greater than or equal to 0.5 found after expected range of first peak, likely a second peak.
-		for (int k = 300; k < 1024 ; k++) 
+		// Filter Multiple Peak waves, as these are likely result of non isolated particle event (not sure if worded correctly).
+		
+		for (int k = 300; k < 1024 ; k++) // start and end one off from limits to access k-1 and k+1 elements
 			{
-	
-			// Start looking past where first pulse expected (~300 x index). Might not be the best way.
-			// Only filter above certain values to avoid counting local noise maxes as peaks.
-			// Might want to count local maxes by integrating peaks	
-			if (ydata[k] >= 0.5) 
-				{	
 
-				localmaxcounter += 1;
+			// before = ydata[k-1];
+			// after = ydata[k+1];
+	
+			// Start looking past where first pulse expected. Might not be the best way.
+
+			// only filter above certain values to avoid counting local noise maxes as peaks.
+			//if (ydata[k] >=0.5 && ydata[k] >= before && ydata[k] >= after)
+			if (ydata[k] >= 0.5) // && ( ydata[k] - ydata[k-50] ) > 0.2 && ( ydata[k] - ydata[k+50] ) > 0.2)
+				{
 				
-				// if two peaks found, don't average into data.
+				// Might want to count local maxes by integrating peaks	
+				localmaxcounter += 1;
 				if (localmaxcounter >= 2)
 
 					{
@@ -310,25 +235,23 @@
 
 			{
 
-			yavg[l] += ydata[avg_start_index]; 
-			alldata[l].push_back(ydata[avg_start_index]);
+			yavg[l] += ydata[avg_start_index];
 			avg_start_index += 1;
-			
 
   			}
-	
+		
 		denom += 1; // Event added to average (dividing by this instead of events because want Double_t, events needs to be Int_t)
 		
 		// On final event, complete averaging process
 			
-		last: // Skip to here if final event is multipeaked
+		last: // Skip to here if final event is off-center
 	
 		if (event_number == (events-1)) // -1 to account for different starting values
   			{
 
 			//del_t->FillN(1,x_peaks,weights,1); // add x_peaks to histogram (delta_t's) to visualize spread. Remove deviation from average
 			
-			//del_t->Draw();
+			del_t->Draw();
 			// Maybe loop through events again after determining average delta_t, THEN add and divide for average.
 
 			for (int event_number = 0; event_number < events; event_number++)
@@ -343,50 +266,35 @@
 
 			cout << endl;	
 			cout << "Number of averaged events: " << denom << endl;
-			cout << "Number of multipeak events: " << (events - denom) << endl;	
+			cout << "Number of off-centered events: " << (events - denom) << endl;	
 
-			//seconds = time(0);
+			seconds = time(0);
   			TString Data_File_Name;
   			Data_File_Name.Form("Text_Files/%d_%s_Data_%d.txt",run_num,channel.Data(),(int)seconds); 
 			ofstream avg_file;
 			avg_file.open(Data_File_Name.Data());
-		
-	
+			
 			avg_file << "Run " << run_num << ", " << "XTAL " << channel.Data() << endl;
 			avg_file << denom << " Averaged Events\n\n";
-			avg_file << "Time (ns)" << " " << "Normalized Amplitude" << " " << "y_uncertainty\n";
+			avg_file << "Time (ns)" << " " << "Normalized Amplitude\n";
 
 			for (int l = 0; l < xrange; l++) // l < range // range may be too long or short 
 				{
 
 				yavg[l] = yavg[l] / denom;
-				//yerror[l] = ( stdev[l] / (double)sqrt(denom) );
-				// Calculate uncertainty
-				for (int k = 0; k < denom; k++) 
-					{
-					// after loop this is stdev squared
-					stdev[l] += ( alldata[l][k] - yavg[l] ) * ( alldata[l][k] - yavg[l] );
-
-					}
-				stdev[l] = sqrt(stdev[l]); // Make standard deviation
-				stdev[l] = ( stdev[l] / sqrt( denom ) ); // Make standard error in mean
-				yerror[l] = stdev[l]; // Save SEM as yerror
 
 				// save average waveform data 
 				avg_file << xavg[l] << " "; // space separated values
-				avg_file << yavg[l] << " ";
-				avg_file << yerror[l] << endl;
+				avg_file << yavg[l] << endl;
 				}
 
 			avg_file.close();
 
 			// Create average waveform graph
-			//TGraph *avg = new TGraph(xrange,xavg,yavg); // assumes all events have same number of values
-			TGraphErrors *avg = new TGraphErrors(xrange,xavg,yavg,xerror,yerror);
+			TGraph *avg = new TGraph(xrange,xavg,yavg); // assumes all events have same number of values
 			avg->SetName("avg"); // To put TGraph in legend
 			avg->SetLineColor(3); // Green
 			avg->SetLineWidth(3); // Make stand out from singular events
-			//avg->SetFillColor(2);
 			mg->Add(avg);
 
 			goto outer;
@@ -419,24 +327,25 @@
   // Create Legend
   TLegend *leg = new TLegend(0.7,0.7,0.9,0.9); // (x1, y1, x2, y2) new TLegend(0.1,0.7,0.2,0.8)
   // leg->SetHeader("Legend","C"); // C centers legend header  
-  //leg->AddEntry("avg","Average","l"); // Options: L P F E
+  leg->AddEntry("avg","Average","l"); // Options: L P F E
   leg->AddEntry(g[0],"Individual Event","l");
   // gStyle->SetLegendBorderSize(3);
   leg->Draw();
   
-  // Save plot (and histogram?) as .png and .root
-  //seconds = time(0); 
+  // Save plot and histogram as .png and .root 
   TString Plot_Title;
   TString File_Title;
-  //TString Histo_Title;
-  //TString Histo_File_Title;
-  Plot_Title.Form("Images/%d_%s_AvgWave_%d.png",run_num,channel.Data(),(int)seconds); 
-  File_Title.Form("Root_Files/%d_%s_AvgWave_%d.root",run_num,channel.Data(),(int)seconds);
-  //Histo_Title.Form("Images/%d_%s_Delta_t_test.png",run_num,channel.Data());
-  //Histo_File_Title.Form("Root_Files/%d_%s_Delta_t_test.root",run_num,channel.Data());
+  TString Histo_Title;
+  TString Histo_File_Title;
+  Plot_Title.Form("Images/%d_%s_AvgWave.png",run_num,channel.Data()); 
+  File_Title.Form("Root_Files/%d_%s_AvgWave.root",run_num,channel.Data());
+  Histo_Title.Form("Images/%d_%s_Delta_t.png",run_num,channel.Data());
+  Histo_File_Title.Form("Root_Files/%d_%s_Delta_t.root",run_num,channel.Data());
   c1->SaveAs(Plot_Title.Data());
   c1->SaveAs(File_Title.Data());
-  //c2->SaveAs(Histo_Title.Data()); 
-  //c2->SaveAs(Histo_File_Title.Data());
+  c2->SaveAs(Histo_Title.Data()); 
+  c2->SaveAs(Histo_File_Title.Data());
+
+  // Next step may be to obtain average waveform data for each channel and plot averages on same graph to compare.
 
 }
