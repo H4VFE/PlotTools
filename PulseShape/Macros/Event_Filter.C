@@ -1,5 +1,5 @@
 {
-  /* The purpose of this macro is to take an analysis_*.root file from /eos/cms/store/group/dpg_ecal/comm_ecal/upgrade/testbeam/ECALTB_H4_Jul2016/ntuples_V1/ntuples/ and obtain the 'good' events and spills, where goodness is defined by some threshold of peak WF_val. This should return events that are unlikely to be noise. The data from these events can then be normalized, averaged and plotted.
+  /* The purpose of this macro is to take an analysis_*.root file from /eos/cms/store/group/dpg_ecal/comm_ecal/upgrade/testbeam/ECALTB_H4_Jul2016/ntuples_V1/ntuples/, created by the H4Analysis repository: https://github.com/simonepigazzini/H4Analysis ,  and obtain the 'good' events and spills, where goodness is defined by a user input threshold of peak WF_val. This should return events that are unlikely to be noise. The data from these events can then be normalized, averaged and plotted.
 
 Abe Tishelman-Charny
 24-5-17
@@ -42,11 +42,12 @@ Abe Tishelman-Charny
   h4 = (TTree*) file->Get("h4"); // Get h4 tree from current opened file
 
   // Initializing vector of spill vectors, each spill vector contains good event numbers. First element of each spill vector is spill number. 
-
   vector< vector < int > > good_spills_events;   
-  vector <int> spills; // Vector with just spill numbers. Use in second loop to find good events for each spill.
+  
+  // Vector with just spill numbers. Use in second loop to find good events for each spill.
+  vector <int> spills;
 
-  // Find spills that likely has clear pulse shapes
+  // Initializing some more variables
   TString cut;
   TString channel;
   TString event_cut;
@@ -57,7 +58,7 @@ Abe Tishelman-Charny
   // Graph for drawing so data can be obtained
   TGraph *gr = new TGraph();
 
-  // Find good spills (determined by spill_max threshold)
+  // Find good spills 
   for (Int_t i =0; i < max_spills; i++) // i < max spill number. Can be user set or generalized to max spill number.
 	{
 
@@ -83,12 +84,9 @@ Abe Tishelman-Charny
 	}  
 
   Int_t event_max = 0; 
-
-  // Search each good spill for good events
-  // Probably need faster way to scan events for non zero max amplitude. Alternative is check every event which will take very long time (> 1 hour ? )
-
   bool first_good = false; // True when first good event is found.
  
+  // Find good events by scanning good spills
   for (vector<int>::size_type i = 0; i != spills.size(); i++) 
 	{
 
@@ -99,9 +97,11 @@ Abe Tishelman-Charny
 
          	event_cut.Form("WF_ch == %s && spill == %d && event == %d",channel.Data(),spills[i],j);
 		
- 		gr->Set(0); // Set number of points to zero.
-		
-		// Alternative way to clear graph
+		// Set number of points to zero.
+		// Need to do this because when iteration is on empty event, nothing is overwritten on gr, and without clearing the graph this will associate data with an empty event.  
+ 		gr->Set(0);
+ 		
+		// Alternative way to clear graph. Might be better, not sure.
 		/*for (Int_t k = 0; k < h4->GetSelectedRows(); k++)
 			{
 
@@ -123,25 +123,24 @@ Abe Tishelman-Charny
 
 			}
 
-	 	if (event_max > event_thres) // Set threshold for event's max WF_val. If max value is less than this, event number not saved. 
+		// Save event number if it exceeds threshold
+	 	if (event_max > event_thres)  
 			{
-			//first_good = true;
-			good_spills_events.at(i).push_back(j); // Enter good event numbers for spill number
-						
+			good_spills_events.at(i).push_back(j); 					
 			}
 
+		// add 49, another one added at next loop iteration. Do this because know events should be spaced by 50.
+		// This should be generalized since the spacing between events may be different in the future.
 		if (first_good) 
 			{
 
-			j += 49; // add 49, another one added at next loop iteration. Do this because know events should be spaced by 50.
-
+			j += 49;
+ 
 			}
 		}  
-
 	} 
 
   // Find number of events
-  
   int num_events = 0;
 
   for (int i = 0; i < good_spills_events.size(); i++)
@@ -173,16 +172,14 @@ Abe Tishelman-Charny
   Event_File << "XTAL: " << column << "" << row << endl;
   // Event_File << "Row: " << row << endl;
   // Event_File << "Column: " << column << endl;
-  Event_File << "Event Threshold = " << event_thres << "\n\n";
- 
+  Event_File << "Event Threshold = " << event_thres << "\n\n"; 
   Event_File << "Top Value is Spill Number, Subsequent Values are Event Numbers. Spills separated by ";
+  
   for (int i = 0; i < good_spills_events.size(); i++)
         {
 	
-	//Event_File << "Spill:" << endl;
 	Event_File << "-\n";
 	Event_File << good_spills_events[i][0] << "\n"; 
-	//Event_File << "Events: " << endl;
         
 	for (int j = 1; j < good_spills_events[i].size(); j++) // Start at j = 1 b/c j = 0 is spill number
   		{
@@ -193,7 +190,6 @@ Abe Tishelman-Charny
         }
 
   Event_File << "End\n";
-
-Event_File.close(); 
+  Event_File.close(); 
  
 }

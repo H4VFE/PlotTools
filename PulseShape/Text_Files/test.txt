@@ -5,10 +5,11 @@ Events scanned per Spill: 10
 XTAL: C3
 Event Threshold = 100
 
-Top Value is Spill Number, Subsequent Values are Event Numbers. Spills separated by empty line. 
+Top Value is Spill Number, Subsequent Values are Event Numbers. Spills separated by -
 2
- 
+-
 3
- 
+-
 4
 9
+End

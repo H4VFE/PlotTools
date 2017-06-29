@@ -21,6 +21,7 @@
   double yaverage[400];
  
   double ratio[400];
+  double difference[400];
  
   // skip four lines (header)
 
@@ -81,8 +82,10 @@
 	xaverage[i] = ( ( xarray1[i] + xarray2[i] ) / 2.0 ); 
 	yaverage[i] = ( ( yarray1[i] + yarray2[i] ) / 2.0 );
 
-	ydiff1[i] = ( yarray1[i] - yaverage[i] );
-	ydiff2[i] = ( yarray2[i] - yaverage[i] );
+	//ydiff1[i] = ( yarray1[i] - yaverage[i] );
+	//ydiff2[i] = ( yarray2[i] - yaverage[i] );
+
+  	difference[i] = ( yarray1[i] - yarray2[i]);
 
   	ratio[i] = ( yarray1[i] / yarray2[i] );
 
@@ -108,44 +111,54 @@
 
   TMultiGraph *mg = new TMultiGraph("mg",Graph_Title.Data());
 
-  TGraph *gr1 = new TGraph(400,xarray1,ratio);
+  //TGraph *gr1 = new TGraph(400,xarray1,difference);
   //TGraph *gr1 = new TGraph(400,xarray1,ydiff1);
-  //TGraph *gr1 = new TGraph(400,xarray1,yarray1);
+  TGraph *gr1 = new TGraph(400,xarray1,yarray1);
   gr1->SetName("gr1");
   gr1->SetLineColor(4);      
 
+  //TGraph *gr3 = new TGraph(400,xarray1,difference);
+  
+  //TGraph *gr4 = new TGraph(400,xarray1,difference);
   //TGraph *gr2 = new TGraph(400,xarray2,ydiff2);
-  //TGraph *gr2 = new TGraph(400,xarray2,yarray2);
-  //gr2->SetName("gr2");
-  //gr2->SetLineColor(6);  
+  TGraph *gr2 = new TGraph(400,xarray2,yarray2);
+  gr2->SetName("gr2");
+  gr2->SetLineColor(6);  
 
-  TGraph *avg = new TGraph(400,xaverage,yaverage);
-  avg->SetName("avg");
-  avg->SetLineColor(1);
+  TGraph *gr3 = new TGraph(400,xarray1,difference);
+  gr3->SetName("gr3");
+  gr3->SetLineColor(1); // black
+  gr3->SetLineStyle(2);
+
+  //TGraph *avg = new TGraph(400,xaverage,yaverage);
+  //avg->SetName("avg");
+  //avg->SetLineColor(1);
 
   mg->Add(gr1);
-  //mg->Add(gr2);
-  mg->Add(avg);
+  mg->Add(gr2);
+  mg->Add(gr3);
+  //mg->Add(avg);
   mg->Draw("AL");
   mg->GetXaxis()->SetTitle("Centered Time (ns)");
-  //mg->GetYaxis()->SetTitle("C3/C2");
   //mg->GetYaxis()->SetTitle("Averaged, Normalized Amplitude");
+  mg->GetYaxis()->SetTitle("Normalized Amplitude");
   //mg->GetYaxis()->SetTitle("Difference From Average in Normalized Ampltiude");
-  mg->GetYaxis()->SetTitleOffset(1.4); // Increase distance between title and axis.
+  mg->GetYaxis()->SetTitleOffset(1.3); // Increase distance between title and axis.
   gPad->Modified();
 
   TLegend *leg = new TLegend(0.7,0.7,0.9,0.9); // (x1, y1, x2, y2) new TLegend(0.1,0.7,0.2,0.8)
   //leg->SetHeader("Legend","C"); // C centers legend header  
-  leg->AddEntry("gr1","Quotient","l");
-  //leg->AddEntry("gr1",crystal1.Data(),"l"); // Options: L P F E
-  //leg->AddEntry("gr2",crystal2.Data(),"l");
-  leg->AddEntry("avg","Normalized Average","l");
+  //leg->AddEntry("gr1","C3 - C2","l");
+  leg->AddEntry("gr1",crystal1.Data(),"l"); // Options: L P F E
+  leg->AddEntry("gr2",crystal2.Data(),"l");
+  leg->AddEntry("gr3","C3-C2","l");
+  //leg->AddEntry("avg","Normalized Average","l");
   // gStyle->SetLegendBorderSize(3);
   leg->Draw();
 
   seconds = time(0);
   TString OutTitle;
-  OutTitle.Form("%s_%s_Comparison_%d.root",crystal1.Data(),crystal2.Data(),(int)seconds);
+  OutTitle.Form("Root_Files/Compare_Average/%s_%s_Comparison_%d.root",crystal1.Data(),crystal2.Data(),(int)seconds);
 
   c1->SaveAs(OutTitle.Data()); 
 
